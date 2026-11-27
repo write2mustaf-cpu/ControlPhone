@@ -39,6 +39,27 @@ function download(url, dest, redirects = 5) {
   });
 }
 
+
+// Giải nén ZIP bằng công cụ có sẵn của hệ điều hành, kiểm tra kết quả sau mỗi cách
+// (Expand-Archive trên một số máy Windows báo lỗi không dừng "MethodCountCouldNotFindBest").
+function extract(zip, dest) {
+  const done = () => fs.existsSync(path.join(TARGET, 'scrcpy-server'));
+  const attempts = process.platform === 'win32'
+    ? [['tar', ['-xf', zip, '-C', dest]],
+       ['powershell', ['-NoProfile', '-NonInteractive', '-Command',
+         `Expand-Archive -Force -LiteralPath "${zip}" -DestinationPath "${dest}"`]]]
+    : [['unzip', ['-q', '-o', zip, '-d', dest]],
+       ['python3', ['-c', 'import sys,zipfile;zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])', zip, dest]]];
+  for (const [cmd, args] of attempts) {
+    try {
+      execFileSync(cmd, args, { stdio: 'inherit' });
+      if (done()) return;
+    } catch (e) {
+      console.warn(`${cmd} không giải nén được: ${e.message.split('\n')[0]}`);
+    }
+  }
+}
+
 (async () => {
   if (fs.existsSync(path.join(TARGET, 'scrcpy-server'))) {
     console.log(`scrcpy ${VERSION} đã có sẵn: ${TARGET}`);
@@ -54,8 +75,11 @@ function download(url, dest, redirects = 5) {
     throw new Error(`Sai mã SHA-256 (${hash}) — tệp tải về không đúng, đã xoá.`);
   }
   console.log('SHA-256 hợp lệ. Đang giải nén...');
-  execFileSync('powershell', ['-NoProfile', '-Command', `Expand-Archive -Force -LiteralPath '${zip}' -DestinationPath '${VENDOR}'`], { stdio: 'inherit' });
+  extract(zip, VENDOR);
   fs.unlinkSync(zip);
+  if (!fs.existsSync(path.join(TARGET, 'scrcpy-server'))) {
+    throw new Error(`Giải nén không tạo ra ${TARGET}\\scrcpy-server — hãy xoá vendor/ và chạy lại.`);
+  }
   console.log(`Xong: ${TARGET}`);
 })().catch((e) => {
   console.error('Lỗi cài đặt scrcpy:', e.message);
