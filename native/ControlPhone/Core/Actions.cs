@@ -240,6 +240,8 @@ public sealed class Actions
             await AdbClient.ShellAsync(a, $"settings put global stay_on_while_plugged_in {(B(p, "on") ? 7 : 0)}", 10000);
             return (true, B(p, "on") ? "Luôn sáng khi cắm sạc" : "Tắt luôn sáng");
         },
+        // gõ chữ: qua phiên xem khi có (Unicode), còn lại adb cho ASCII — dùng chung đường với thao tác hàng loạt
+        ["text"] = async (d, a, p) => await Typing.SendAsync(d, S(p, "text"), B(p, "enter")),
         ["brightness"] = async (d, a, p) =>
         {
             var v = Math.Clamp(int.TryParse(S(p, "value"), out var x) ? x : 40, 0, 255);

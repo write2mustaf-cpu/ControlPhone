@@ -228,8 +228,12 @@ Chinese, because the session turns the text into a clipboard paste on the phone.
 ControlPhone falls back to `adb shell input text`, which only understands plain ASCII.
 
 The fallback is honest about its limits: ASCII text is delivered, non-ASCII text is refused per phone with the reason
-("needs an open mirror session") instead of being silently dropped. The AI `send_text` tool reports `OK`, `PARTIAL` or
-`FAIL` with a per-phone line, so an assistant answer can never claim it typed Arabic on a phone that never received it.
+("needs an open mirror session") instead of being silently dropped.
+
+Bulk typing — *Send text to N phones* — is a batch operation like install or shell, not a fire-and-forget loop: it shows a
+progress card, keeps one result row per phone, lets you cancel a single phone, and **retries only the phones that failed**
+with the same text. The AI `send_text` tool runs through the same engine and answers `OK`, `PARTIAL` or `FAIL` with a
+per-phone line, so an assistant answer can never claim it typed Arabic on a phone that never received it.
 
 ### Controlling a running batch
 

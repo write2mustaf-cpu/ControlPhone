@@ -731,4 +731,7 @@ export default {
   "Đã ở cuối lưới": "Ist bereits das letzte im Raster",
   "Đã dời #{0} · thứ tự được lưu lại": "#{0} verschoben · Reihenfolge gespeichert",
   "Dời ô cần chọn đúng một máy": "Zum Verschieben genau ein Telefon auswählen",
+  "Máy đang mở xem: dán qua clipboard nên gõ được mọi ký tự có dấu. Máy không mở xem: chỉ ASCII qua adb.": "Telefone mit offener Spiegelsitzung erhalten beliebigen Text (Zwischenablage). Ohne Sitzung nur ASCII über adb.",
+  "Kết quả từng máy hiện trong bảng kết quả — có thể dừng một máy hoặc thử lại đúng máy lỗi.": "Das Ergebnis jedes Telefons erscheint in der Ergebnisliste — einzelne Telefone stoppen oder nur die fehlgeschlagenen wiederholen.",
+  "Gõ chữ": "Text eingeben",
 };

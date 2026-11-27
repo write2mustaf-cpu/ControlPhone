@@ -3,6 +3,27 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.14.0 — Bulk typing joins the batch engine
+
+### The gap
+Typing was the one operation that bypassed `Actions.RunBatch`: the *Send text to N phones* dialog looped over phones and
+showed a toast, and the AI `send_text` tool looped on its own. No progress card, no per-phone rows, no cancel of a single
+phone, and — the real loss — no way to retry the phones that failed, even though the batch engine has had per-phone
+cancel and retry since 3.11.
+
+### What changed
+- `Actions.Ops["text"]` → `Typing.SendAsync(d, text, enter)`, so typing now has the queue limit, the progress card, the
+  per-phone results window with ✕ per phone, and `Actions.Retry` (the payload keeps `text` + `enter`, so a retry types the
+  same text on exactly the phones that failed).
+- `DlgText` sends through `Batch("text", …, openResults: true)` instead of a fire-and-forget loop; its notes now state the
+  session/ASCII rule and that per-phone results are available.
+- The AI `send_text` tool also runs through the batch engine; `Typing.Summary(text, results)` formats the answer as
+  `OK` / `PARTIAL` / `FAIL` with one line per phone, and the progress card title reads *Type text* instead of `text`.
+
+### Verification
+- Self-check 269 → **275**: `Summary` is `OK` only when every phone took the text, `PARTIAL` when one is short, `FAIL`
+  when none (or when there are no results at all), names the phone that failed, and keeps the preview on one line.
+
 ## 3.13.0 — Put a phone where you expect it (manual grid order)
 
 ### The gap

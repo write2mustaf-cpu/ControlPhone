@@ -452,6 +452,14 @@ public static class SelfCheck
         Check(Typing.CanUseAdb("plain") && Typing.CanUseAdb("two\nlines") && !Typing.CanUseAdb("مرحبا"),
             "adb is only used for text it can actually type");
         Check(Typing.Preview("a\nb") == "a b", "previews stay on one line", Typing.Preview("a\nb"));
+        var allOk = Typing.Summary("hi", [("#1", true, "via adb"), ("#2", true, "via adb")]);
+        Check(allOk.StartsWith("OK:") && allOk.Contains("on 2/2 phone(s)"), "summary says OK only when every phone took the text", allOk.Split('\n')[0]);
+        var mixed = Typing.Summary("مرحبا", [("#1", true, "qua phiên xem"), ("#2", false, "cần phiên xem")]);
+        Check(mixed.StartsWith("PARTIAL:") && mixed.Contains("on 1/2 phone(s)"), "one phone short is PARTIAL, never OK", mixed.Split('\n')[0]);
+        Check(mixed.Contains("FAIL #2"), "the summary names the phone that did not receive the text");
+        Check(Typing.Summary("hi", [("#1", false, "offline")]).StartsWith("FAIL:"), "all phones failing is FAIL");
+        Check(Typing.Summary("hi", []).StartsWith("FAIL:"), "an empty result set is FAIL, not OK");
+        Check(Typing.Summary("a\nb", [("#1", true, "ok")]).Contains("\"a b\""), "the summary keeps the preview on one line");
         Check(Typing.Preview(new string('x', 50)).EndsWith("…") && Typing.Preview(new string('x', 50)).Length == 41,
             "long previews are cut with an ellipsis", Typing.Preview(new string('x', 50)));
     }

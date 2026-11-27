@@ -731,4 +731,7 @@ export default {
   "Đã ở cuối lưới": "已在网格最后",
   "Đã dời #{0} · thứ tự được lưu lại": "已移动 #{0} · 顺序已保存",
   "Dời ô cần chọn đúng một máy": "移动卡片需要只选中一台手机",
+  "Máy đang mở xem: dán qua clipboard nên gõ được mọi ký tự có dấu. Máy không mở xem: chỉ ASCII qua adb.": "已打开投屏的手机可接收任意文本（剪贴板粘贴）；未打开的仅通过 adb 接收 ASCII。",
+  "Kết quả từng máy hiện trong bảng kết quả — có thể dừng một máy hoặc thử lại đúng máy lỗi.": "每台手机的结果显示在结果面板中——可单独停止某台或只重试失败的手机。",
+  "Gõ chữ": "输入文本",
 };
