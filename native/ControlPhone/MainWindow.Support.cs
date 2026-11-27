@@ -126,6 +126,117 @@ public partial class MainWindow
         return Ai.AiSecret.Redact(sb.ToString().TrimEnd(), null);
     }
 
+    // ---------------- phím tắt ----------------
+    void InitShortcuts()
+    {
+        PreviewKeyDown += (_, e) =>
+        {
+            var action = Shortcuts.Match(e.Key, Keyboard.Modifiers);
+            if (action == null) return;
+            // trong ô nhập chỉ giữ Esc/F1/Ctrl+F, không cướp phím chữ của người dùng
+            if (Keyboard.FocusedElement is TextBox or ComboBox && !Shortcuts.WorksWhileTyping(action)) return;
+            RunShortcut(action);
+            e.Handled = true;
+        };
+    }
+
+    void RunShortcut(string action)
+    {
+        var targets = manager.Devices.Where(d => selected.Contains(d.Id)).ToList();
+        if (targets.Count == 0) targets = manager.Devices.Where(d => d.IsActive).ToList();
+        switch (action)
+        {
+            case Shortcuts.FocusSearch:
+                SearchBox.Focus();
+                SearchBox.SelectAll();
+                break;
+            case Shortcuts.Escape:
+                if (SearchBox.Text.Length > 0) { SearchBox.Text = ""; search = ""; RenderAll(); }
+                else ClearSelection();
+                break;
+            case Shortcuts.RefreshInfo:
+            {
+                var online = manager.Devices.Where(d => d.IsOnline).ToList();
+                foreach (var d in online) manager.RefreshInfo(d);
+                Ui.Toast(T("Đang cập nhật thông tin {0} máy", online.Count), "ok");
+                break;
+            }
+            case Shortcuts.SelectAll:
+                SelectWhere(_ => true);
+                break;
+            case Shortcuts.InvertSelection:
+            {
+                var visible = VisibleDevices().Where(d => !d.Pending).Select(d => d.Id).ToList();
+                foreach (var id in visible)
+                    if (!selected.Remove(id)) selected.Add(id);
+                RefreshSelection();
+                break;
+            }
+            case Shortcuts.SoloSelection:
+                if (selected.Count == 0) { Ui.Toast(T("Hãy chọn ít nhất một máy trước"), "err"); break; }
+                SetSolo([.. selected]);
+                break;
+            case Shortcuts.ShowAll:
+                SetSolo(null);
+                break;
+            case Shortcuts.PauseToggle:
+                SetLive(!PhoneDevice.Live);
+                break;
+            case Shortcuts.RestartStream:
+            {
+                var list = targets.Count > 0 ? targets : manager.Devices.Where(d => d.IsOnline).ToList();
+                foreach (var d in list) manager.RestartSessions(d);
+                Ui.Toast(T("Đang kết nối lại luồng hình của {0} máy", list.Count), "ok");
+                break;
+            }
+            case Shortcuts.AiChat:
+                ShowAiChat();
+                break;
+            case Shortcuts.Screenshot:
+            {
+                var d = targets.FirstOrDefault() ?? manager.Devices.FirstOrDefault(x => x.IsOnline);
+                if (d == null) { Ui.Toast(T("Không có máy nào để chụp"), "err"); break; }
+                _ = SaveShot(d, open: false);
+                break;
+            }
+            case Shortcuts.Help:
+                DlgShortcuts();
+                break;
+        }
+    }
+
+    void DlgShortcuts()
+    {
+        var d = new Dlg(T("Phím tắt"), 620);
+        d.AddText(T("Các phím tắt dùng trong cửa sổ chính. Phím tắt không cướp phím chữ khi bạn đang gõ trong ô nhập (trừ Esc, F1, Ctrl+F)."));
+        var grid = new Grid { Margin = new Thickness(0, 4, 0, 8) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(130) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var row = 0;
+        foreach (var s in Shortcuts.All)
+        {
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var keys = new TextBlock
+            {
+                Text = Shortcuts.Gesture(s),
+                FontFamily = new FontFamily("Consolas"),
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(0, 3, 12, 3),
+            };
+            Grid.SetRow(keys, row);
+            Grid.SetColumn(keys, 0);
+            grid.Children.Add(keys);
+            var label = new TextBlock { Text = T(s.Label), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 3, 0, 3) };
+            Grid.SetRow(label, row);
+            Grid.SetColumn(label, 1);
+            grid.Children.Add(label);
+            row++;
+        }
+        d.Body.Children.Add(grid);
+        d.AddAction(T("Đóng"), "Primary");
+        d.Show();
+    }
+
     void DlgSupport()
     {
         var d = new Dlg("Liên hệ & hỗ trợ", 700);

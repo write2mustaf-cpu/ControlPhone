@@ -51,6 +51,7 @@ public static class SelfCheck
             DeviceLogChecks();
             StreamChecks();
             BackupChecks();
+            ShortcutChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -400,6 +401,30 @@ public static class SelfCheck
         Check(DeviceVideo.Thumb(new DeviceMeta { ThumbFps = 500, ThumbMaxSize = 9000 }, st) == new VideoPlan(1920, 600_000, 60), "out-of-range overrides clamped");
         Check(DeviceVideo.HasOverrides(weak) && !DeviceVideo.HasOverrides(new DeviceMeta()) && !DeviceVideo.HasOverrides(null), "override detection");
         Check(!DeviceVideo.HasOverrides(Store.MetaOrNull(null)) && Store.MetaOrNull("missing-device") == null, "meta lookup does not create entries");
+    }
+
+    // ---------------- bảng phím tắt ----------------
+    static void ShortcutChecks()
+    {
+        Check(Shortcuts.Match(System.Windows.Input.Key.F, System.Windows.Input.ModifierKeys.Control) == Shortcuts.FocusSearch, "ctrl+f focuses the search box");
+        Check(Shortcuts.Match(System.Windows.Input.Key.A, System.Windows.Input.ModifierKeys.Control) == Shortcuts.SelectAll, "ctrl+a selects all phones");
+        Check(Shortcuts.Match(System.Windows.Input.Key.A, System.Windows.Input.ModifierKeys.Control | System.Windows.Input.ModifierKeys.Shift) == Shortcuts.AiChat, "ctrl+shift+a opens the assistant");
+        Check(Shortcuts.Match(System.Windows.Input.Key.L, System.Windows.Input.ModifierKeys.Control) == Shortcuts.SoloSelection
+              && Shortcuts.Match(System.Windows.Input.Key.L, System.Windows.Input.ModifierKeys.Control | System.Windows.Input.ModifierKeys.Shift) == Shortcuts.ShowAll,
+            "ctrl+l and ctrl+shift+l are distinct");
+        Check(Shortcuts.Match(System.Windows.Input.Key.F5, System.Windows.Input.ModifierKeys.None) == Shortcuts.RefreshInfo, "f5 refreshes device info");
+        Check(Shortcuts.Match(System.Windows.Input.Key.Escape, System.Windows.Input.ModifierKeys.None) == Shortcuts.Escape, "escape clears search or selection");
+        Check(Shortcuts.Match(System.Windows.Input.Key.F1, System.Windows.Input.ModifierKeys.None) == Shortcuts.Help, "f1 opens the shortcut list");
+        Check(Shortcuts.Match(System.Windows.Input.Key.F, System.Windows.Input.ModifierKeys.None) == null, "a bare letter does not trigger a shortcut");
+        Check(Shortcuts.Match(System.Windows.Input.Key.F, System.Windows.Input.ModifierKeys.Control | System.Windows.Input.ModifierKeys.Alt) == null, "extra modifiers do not match");
+        Check(Shortcuts.Match(System.Windows.Input.Key.F, System.Windows.Input.ModifierKeys.Control | System.Windows.Input.ModifierKeys.Windows) == Shortcuts.FocusSearch, "the windows key is ignored");
+        Check(Shortcuts.All.Select(x => x.Action).Distinct().Count() == Shortcuts.All.Length, "every shortcut action is unique");
+        Check(Shortcuts.All.All(x => !string.IsNullOrWhiteSpace(x.Label)), "every shortcut has a label for the help dialog");
+        var ai = Shortcuts.All.First(x => x.Action == Shortcuts.AiChat);
+        Check(Shortcuts.Gesture(ai) == "Ctrl+Shift+A", "gesture text is readable", Shortcuts.Gesture(ai));
+        Check(Shortcuts.Gesture(Shortcuts.All.First(x => x.Action == Shortcuts.Escape)) == "Esc", "escape gesture is spelled Esc");
+        Check(Shortcuts.WorksWhileTyping(Shortcuts.Escape) && Shortcuts.WorksWhileTyping(Shortcuts.Help)
+              && !Shortcuts.WorksWhileTyping(Shortcuts.SelectAll), "typing in a text box is never hijacked");
     }
 
     // ---------------- sao lưu / khôi phục toàn bộ dữ liệu người dùng ----------------

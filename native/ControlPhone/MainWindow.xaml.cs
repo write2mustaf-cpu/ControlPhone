@@ -76,6 +76,7 @@ public partial class MainWindow : Window
 
         InitTopbar();
         InitSidebar();
+        InitShortcuts();
         InitActionBar();
         InitViewer();
         InitInput();

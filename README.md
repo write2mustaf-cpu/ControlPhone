@@ -210,6 +210,24 @@ the operation log, and keeps your device names and numbers.
 - **Navigation bar visible in games on Android 10** — select the phones → right-click → ADB commands → *Hide 3-button bar for the current app*.
 - **No video in the browser** — use a recent Microsoft Edge or Google Chrome (WebCodecs required).
 
+### Keyboard shortcuts
+
+| Keys | Action |
+|---|---|
+| `Ctrl+F` | focus the search box |
+| `Esc` | clear the search box, then the selection |
+| `F5` | refresh the information of every online phone |
+| `Ctrl+A` / `Ctrl+I` | select all visible phones / invert the selection |
+| `Ctrl+L` / `Ctrl+Shift+L` | show only the selected phones / show all again |
+| `Ctrl+P` | pause or resume viewing |
+| `Ctrl+R` | reconnect the video stream of the selected phones |
+| `Ctrl+Shift+A` | open the AI assistant |
+| `Ctrl+Shift+S` | screenshot the selected phone |
+| `F1` | this list, inside the app |
+
+Shortcuts are ignored while you type in a field (only `Esc`, `F1` and `Ctrl+F` still work), so typing never triggers an
+action.
+
 ### Backup and restore
 
 *Settings → Export / import settings* now also offers **Back up all data…** and **Restore from a backup…**. The ZIP holds
