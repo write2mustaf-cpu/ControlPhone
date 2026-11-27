@@ -21,7 +21,7 @@ rack" belongs next to the one it is cabled with, and no sort key expresses that.
   for phones that no longer exist.
 
 ### Verification
-- Self-check 251 → **270**: order normalisation (stale dropped, new appended, duplicates removed, empty grid), `Move`
+- Self-check 251 → **269**: order normalisation (stale dropped, new appended, duplicates removed, empty grid), `Move`
   at both ends and for unknown ids, `Move` not mutating its input, `MovePast` before/after a neighbour and with a missing
   neighbour, plus the two new shortcut combinations, `Ctrl+Left` staying free, and no shortcut stealing keys from a text
   field.

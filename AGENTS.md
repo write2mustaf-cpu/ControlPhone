@@ -61,7 +61,7 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (270 checks as of 3.13.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (269 checks as of 3.13.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
 ## Gotchas
