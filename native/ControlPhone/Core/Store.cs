@@ -98,6 +98,9 @@ public sealed class UiPrefs
     public double TileW { get; set; } = 180;
     public double TileWBeforeSolo { get; set; }
     public string Sort { get; set; } = "num";
+
+    /// <summary>Thứ tự ô do người dùng tự xếp (chế độ sắp xếp "manual").</summary>
+    public List<string> Order { get; set; } = [];
     public string Filter { get; set; } = "all";
     public string Theme { get; set; } = "dark";
     public string Lang { get; set; } = "";

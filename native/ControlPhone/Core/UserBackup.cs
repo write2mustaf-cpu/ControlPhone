@@ -34,6 +34,9 @@ public static class UserBackup
         public string? Lang { get; set; }
         public double? TileW { get; set; }
         public string? Sort { get; set; }
+
+        /// <summary>Thứ tự ô tự xếp (3.13+); bản sao lưu cũ không có trường này.</summary>
+        public List<string>? Order { get; set; }
         public bool? HideOffline { get; set; }
         public AiSettings? Ai { get; set; }
         public Dictionary<string, DeviceMeta> Devices { get; set; } = [];
@@ -157,6 +160,7 @@ public static class UserBackup
             Lang = Store.Ui.Lang,
             TileW = Store.Ui.TileW,
             Sort = Store.Ui.Sort,
+            Order = [.. Store.Ui.Order],
             HideOffline = Store.Ui.HideOffline,
             Ai = AiStore.Settings,
             Devices = new Dictionary<string, DeviceMeta>(Store.State.Devices),

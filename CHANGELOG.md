@@ -3,6 +3,29 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.13.0 — Put a phone where you expect it (manual grid order)
+
+### The gap
+The grid could be sorted by number, name, status or battery — never arranged. In a farm the phone labelled "charging
+rack" belongs next to the one it is cabled with, and no sort key expresses that.
+
+### What was added
+- `Core/ManualOrder.cs`: `Normalize(present, stored)` (saved order wins, phones added later go to the end, removed
+  phones are dropped, no duplicates), `Move(order, id, delta)` (clamped at both ends), `MovePast(full, id, neighbour,
+  delta)` so moving inside a filtered grid inserts next to the visible neighbour in the full list.
+- `Store.Ui.Order` (list of ids) plus a new sort mode `manual`; `RenderAllCore` applies the stored order when that mode
+  is active, so the existing incremental `GridOrder.Sync` still moves only the tiles that changed.
+- **Move earlier / Move later** in the tile menu and on `Ctrl+Shift+←` / `Ctrl+Shift+→` (single selection). The first
+  move switches the sort box to *Manual order*, saves, and toasts which phone moved.
+- User-data backups now carry the order (`Doc.Order`), restored through `Normalize` so an old backup cannot inject ids
+  for phones that no longer exist.
+
+### Verification
+- Self-check 251 → **269**: order normalisation (stale dropped, new appended, duplicates removed, empty grid), `Move`
+  at both ends and for unknown ids, `Move` not mutating its input, `MovePast` before/after a neighbour and with a missing
+  neighbour, plus the two new shortcut combinations, `Ctrl+Left` staying free, and no shortcut stealing keys from a text
+  field.
+
 ## 3.12.0 — Typing text that adb cannot carry, and reporting it honestly
 
 ### The bug

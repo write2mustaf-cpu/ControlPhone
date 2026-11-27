@@ -817,4 +817,11 @@ export default {
   "Máy chưa sẵn sàng": "Phone is not ready yet",
   "qua adb": "via adb",
   "{0} máy không nhận được chữ — {1}": "{0} phone(s) did not receive the text — {1}",
+  "Thứ tự tự xếp": "Manual order",
+  "Dời về trước": "Move earlier",
+  "Dời ra sau": "Move later",
+  "Đã ở đầu lưới": "Already first on the grid",
+  "Đã ở cuối lưới": "Already last on the grid",
+  "Đã dời #{0} · thứ tự được lưu lại": "Moved #{0} · the order is saved",
+  "Dời ô cần chọn đúng một máy": "Moving a tile needs exactly one phone selected",
 };
