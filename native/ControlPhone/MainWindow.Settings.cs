@@ -45,33 +45,27 @@ public partial class MainWindow
                           ?? throw new JsonException("tệp rỗng");
                 if (imp.Settings == null) throw new JsonException("không có phần cài đặt");
                 var s = imp.Settings;
-                // giá trị hợp lệ hoá để tệp hỏng không làm app chạy sai
-                s.ThumbMaxSize = Math.Clamp(s.ThumbMaxSize, 160, 1920);
-                s.ThumbBitRate = Math.Clamp(s.ThumbBitRate, 30_000, 20_000_000);
-                s.ThumbFps = Math.Clamp(s.ThumbFps, 1, 60);
-                s.HqMaxSize = Math.Clamp(s.HqMaxSize, 320, 2560);
-                s.HqBitRate = Math.Clamp(s.HqBitRate, 500_000, 40_000_000);
-                s.HqFps = Math.Clamp(s.HqFps, 5, 60);
-                s.MaxParallelStart = Math.Clamp(s.MaxParallelStart, 1, 30);
-                s.MaxParallelJobs = Math.Clamp(s.MaxParallelJobs, 1, 50);
-                if (s.PreferTransport is not ("usb" or "wifi")) s.PreferTransport = "usb";
-                if (string.IsNullOrWhiteSpace(s.ScreenshotDir)) s.ScreenshotDir = Path.Combine(Path.GetDirectoryName(Store.DataDir) ?? AppContext.BaseDirectory, "screenshots");
+                // hợp lệ hoá bằng cùng bộ quy tắc dùng khi nạp config.json: tệp hỏng không làm app chạy sai
                 s.Extra = null;
+                var fixedUp = SettingsSanitizer.Apply(s);
+                if (fixedUp.Count > 0) OpLog.Add("Nhập cài đặt: đã sửa " + string.Join(", ", fixedUp));
                 Store.State.Settings = s;
                 if (imp.Ai != null)
                 {
                     imp.Ai.ExtraSystemPrompt ??= "";
-                    AiStore.Settings.MaxToolRounds = Math.Clamp(imp.Ai.MaxToolRounds, 1, 20);
+                    AiStore.Settings.MaxToolRounds = imp.Ai.MaxToolRounds;
                     AiStore.Settings.RequireApproval = imp.Ai.RequireApproval;
                     AiStore.Settings.ShowToolDetails = imp.Ai.ShowToolDetails;
                     AiStore.Settings.ShowPlan = imp.Ai.ShowPlan;
                     AiStore.Settings.ExtraSystemPrompt = imp.Ai.ExtraSystemPrompt;
+                    SettingsSanitizer.Apply(AiStore.Settings);
                     AiStore.Save();
                 }
                 if (!string.IsNullOrEmpty(imp.Theme)) { Store.Ui.Theme = imp.Theme == "light" ? "light" : "dark"; Theme.Apply(Store.Ui.Theme); }
                 if (imp.TileW is double tw) Store.Ui.TileW = Math.Clamp(tw, 110, 520);
                 if (!string.IsNullOrEmpty(imp.Sort)) Store.Ui.Sort = imp.Sort;
                 if (imp.HideOffline is bool ho) Store.Ui.HideOffline = ho;
+                SettingsSanitizer.Apply(Store.Ui);
                 Store.Save();
                 Store.SaveUi();
                 manager.ResetStartLimiter();

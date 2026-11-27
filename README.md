@@ -63,6 +63,10 @@ Docs: [Windows install](docs/WINDOWS-INSTALL.md) · [AI providers & assistant](d
 - Only visible tiles are decoded; minimizing the window pauses everything.
 - **Pause viewing** for one phone or a group (the phone stops streaming but stays controllable).
 - **Show only these phones**: hide and pause every other phone, restore with one click.
+- **Per-phone video settings (ControlPhone 3.2+)** — a weak phone next to a strong one in the same grid: right-click a
+  phone → *Per-phone video settings* and give that one its own grid resolution/fps and viewer resolution/fps/bitrate.
+  Empty field = global setting. Saving restarts only that phone's stream; a dot in the menu shows which phones have
+  their own values.
 
 **Control — directly on the small screens**
 - Mouse = finger on any tile: tap, swipe, long-press. Middle click = Home, side button = Back, Shift + wheel = scroll, Alt + drag = pinch zoom.
@@ -170,9 +174,17 @@ Measured on a Windows PC (22 threads) with 20 phones running a 3D game (every ph
 Decoding benchmark: 100 streams × 15 fps (1,500 frames/s) decoded with the UI still at 60 fps.
 Idle phones (static screen) cost about 6 kbps each.
 
+**Mixed farms (ControlPhone 3.2+):** keep the grid light for the whole set and give the few phones that need it a
+higher viewer resolution of their own, instead of raising the global level for all 100.
+
 **Tips for 100 phones:** use the *Ultra-light* preset, spread the phones over several USB controllers (a single USB controller usually handles only a few dozen phones), and pause viewing for phones you don't need to watch.
 
 ## ❓ Troubleshooting
+
+A corrupted or hand-edited `config.json` no longer breaks the app: ControlPhone 3.2+ clamps every value back into its
+valid range on load (fps, resolution, bitrate, parallel limits, LAN ports, theme, sort, language), logs what it fixed in
+the operation log, and keeps your device names and numbers.
+
 
 - **Tile stuck on "Connecting…"** — right-click → Reconnect stream, or *Restart ADB* in the sidebar.
 - **"Could not start scrcpy on this phone"** — scrcpy-server failed 3 times in a row on that phone; ControlPhone 2 keeps retrying every minute and writes the server's command line and output to `data\logs\scrcpy-<serial>.log`. Please attach that file when [opening an issue](https://github.com/mahiepit/ControlPhone/issues).

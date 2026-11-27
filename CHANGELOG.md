@@ -3,6 +3,32 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.2.0 — Per-phone video settings, settings that cannot break the app
+
+### Per-phone video settings (new)
+- Right-click a phone → *Per-phone video settings*: grid resolution, grid fps, viewer resolution, viewer fps and viewer
+  bitrate for **that one phone**. Empty field = the global value, so nothing changes unless you ask for it.
+- Applied where the stream is actually started (`ThumbOptions`/`HqOptions`), not in the UI only: the phone's own
+  session is restarted, the other phones keep running.
+- Out-of-range or zero overrides are ignored/clamped (`DeviceVideo`), so a typo cannot open a stream with 0 fps.
+- The menu marks phones that have their own values; *Use global settings* clears them in one click.
+
+### Settings are validated on load, not only on import
+- New `SettingsSanitizer`, used by `config.json`, `ui.json`, `ai.json` **and** the import dialog (one rule set instead of
+  duplicated inline clamps): fps 1–60 / 5–60, grid size 160–1920, viewer size 320–2560, bitrates 30k–20M / 500k–40M,
+  parallel start 1–30, parallel jobs 1–50, transport ∈ {usb, wifi}, LAN ports normalised to valid numbers
+  (`,`-separated, deduplicated, fallback 5555), invalid screenshot folder replaced, unknown theme/sort/filter reset,
+  unknown language → system default, shell history capped at 50, AI tool rounds 1–20, extra system prompt ≤ 4000 chars.
+- Every correction is written to the operation log (`Đã sửa cài đặt không hợp lệ: …`) instead of failing silently, and
+  device names/numbers are never touched.
+- `Store.MetaOrNull` — a read-only device-meta lookup, so the stream path never creates empty records.
+
+### Verification
+- Self-check 85 → **106** checks: clamping of every numeric range, transport/port/path/theme/sort/filter/language
+  fallbacks, "valid settings are left alone", port normalisation, AI limits, and the per-phone video precedence rules
+  (override wins, empty inherits, 0/negative ignored, out-of-range clamped, no meta record created by a lookup).
+- Build, self-check and installer smoke test run in CI on Windows; the release assets are checked after upload.
+
 ## 3.1.0 — Stability, error reporting and assistant hardening
 
 ### Crash handling and support reports (new)
