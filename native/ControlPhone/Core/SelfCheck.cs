@@ -49,6 +49,7 @@ public static class SelfCheck
             DiagChecks();
             SafeModeChecks();
             DeviceLogChecks();
+            StreamChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -398,6 +399,68 @@ public static class SelfCheck
         Check(DeviceVideo.Thumb(new DeviceMeta { ThumbFps = 500, ThumbMaxSize = 9000 }, st) == new VideoPlan(1920, 600_000, 60), "out-of-range overrides clamped");
         Check(DeviceVideo.HasOverrides(weak) && !DeviceVideo.HasOverrides(new DeviceMeta()) && !DeviceVideo.HasOverrides(null), "override detection");
         Check(!DeviceVideo.HasOverrides(Store.MetaOrNull(null)) && Store.MetaOrNull("missing-device") == null, "meta lookup does not create entries");
+    }
+
+    // ---------------- phát trực tiếp câu trả lời của trợ lý (SSE, không cần mạng) ----------------
+    static void StreamChecks()
+    {
+        var parser = new Ai.SseParser();
+        var two = parser.Feed("data: {\"a\":1}\n\ndata: {\"b\":2}\n\nda");
+        Check(two.Count == 2 && two[0].Data == "{\"a\":1}" && two[1].Data == "{\"b\":2}", "sse splits complete events", two.Count + " events");
+        var joined = parser.Feed("ta: {\"c\":3}\n\n");
+        Check(joined.Count == 1 && joined[0].Data == "{\"c\":3}", "sse joins a chunk cut in the middle");
+
+        var crlf = new Ai.SseParser();
+        var named = crlf.Feed("event: ping\r\ndata: x\r\n\r\n");
+        Check(named.Count == 1 && named[0].Name == "ping" && named[0].Data == "x", "sse handles CRLF and event names");
+
+        var cmt = new Ai.SseParser();
+        Check(cmt.Feed(": keep-alive\n\ndata: y\n\n").Count == 1, "sse ignores comments");
+        var tail = new Ai.SseParser();
+        Check(tail.Feed("data: z").Count == 0 && tail.Flush().Count == 1, "sse flush emits the last event");
+
+        var oa = new Ai.StreamAccumulator(Ai.AiProviderKind.OpenAi);
+        var d1 = oa.Feed(new Ai.SseEvent("", "{\"choices\":[{\"delta\":{\"content\":\"Hel\"}}]}"));
+        var d2 = oa.Feed(new Ai.SseEvent("", "{\"choices\":[{\"delta\":{\"content\":\"lo\"}}]}"));
+        oa.Feed(new Ai.SseEvent("", "{\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"function\":{\"name\":\"list_devices\",\"arguments\":\"{\\\"a\\\":\"}}]}}]}"));
+        oa.Feed(new Ai.SseEvent("", "{\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"1}\"}}]}}]}"));
+        oa.Feed(new Ai.SseEvent("", "{\"choices\":[],\"usage\":{\"prompt_tokens\":11,\"completion_tokens\":7}}"));
+        var r1 = oa.Result();
+        Check(d1 == "Hel" && d2 == "lo", "openai deltas are returned for display");
+        Check(r1.Text == "Hello", "openai text accumulates", r1.Text);
+        Check(r1.ToolCalls.Count == 1 && r1.ToolCalls[0].Name == "list_devices" && r1.ToolCalls[0].Id == "call_1", "openai tool call merged from deltas");
+        Check(r1.ToolCalls.Count == 1 && r1.ToolCalls[0].ArgumentsJson == "{\"a\":1}", "openai tool arguments merged", r1.ToolCalls.Count == 1 ? r1.ToolCalls[0].ArgumentsJson : "");
+        Check(r1.Usage.InputTokens == 11 && r1.Usage.OutputTokens == 7, "openai usage captured");
+
+        var an = new Ai.StreamAccumulator(Ai.AiProviderKind.Anthropic);
+        an.Feed(new Ai.SseEvent("message_start", "{\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":21}}}"));
+        var t1 = an.Feed(new Ai.SseEvent("content_block_delta", "{\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"مرحبا\"}}"));
+        an.Feed(new Ai.SseEvent("content_block_start", "{\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_9\",\"name\":\"list_devices\"}}"));
+        an.Feed(new Ai.SseEvent("content_block_delta", "{\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"x\\\":2}\"}}"));
+        an.Feed(new Ai.SseEvent("message_delta", "{\"type\":\"message_delta\",\"usage\":{\"output_tokens\":13}}"));
+        var r2 = an.Result();
+        Check(t1 == "مرحبا" && r2.Text == "مرحبا", "anthropic text delta shown and accumulated", r2.Text);
+        Check(r2.ToolCalls.Count == 1 && r2.ToolCalls[0].Id == "toolu_9" && r2.ToolCalls[0].ArgumentsJson == "{\"x\":2}", "anthropic tool input merged", r2.ToolCalls.Count == 1 ? r2.ToolCalls[0].ArgumentsJson : "");
+        Check(r2.Usage.InputTokens == 21 && r2.Usage.OutputTokens == 13, "anthropic usage captured");
+
+        var gm = new Ai.StreamAccumulator(Ai.AiProviderKind.Gemini);
+        var g1 = gm.Feed(new Ai.SseEvent("", "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hi\"}]}}]}"));
+        gm.Feed(new Ai.SseEvent("", "{\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"name\":\"list_devices\",\"args\":{\"k\":1}}}]}}]}"));
+        gm.Feed(new Ai.SseEvent("", "{\"usageMetadata\":{\"promptTokenCount\":5,\"candidatesTokenCount\":3}}"));
+        var r3 = gm.Result();
+        Check(g1 == "Hi" && r3.Text == "Hi", "gemini text part shown and accumulated");
+        Check(r3.ToolCalls.Count == 1 && r3.ToolCalls[0].Name == "list_devices", "gemini functionCall captured");
+        Check(r3.Usage.Total == 8, "gemini usage captured");
+
+        var openai = new Ai.AiProvider { Kind = Ai.AiProviderKind.OpenAi, BaseUrl = "https://api.openai.com/v1", Model = "gpt-4o-mini" };
+        var body = Ai.AiClient.StreamBody(openai, "{\"model\":\"gpt-4o-mini\",\"messages\":[]}");
+        Check(body.Contains("\"stream\":true") && body.Contains("include_usage"), "openai stream body asks for usage", body);
+        var gemini = new Ai.AiProvider { Kind = Ai.AiProviderKind.Gemini, BaseUrl = "https://generativelanguage.googleapis.com", Model = "gemini-2.5-flash" };
+        Check(Ai.AiClient.StreamUrl(gemini).Contains(":streamGenerateContent?alt=sse"), "gemini uses the streaming endpoint", Ai.AiClient.StreamUrl(gemini));
+        Check(Ai.AiClient.StreamBody(gemini, "{\"a\":1}") == "{\"a\":1}", "gemini body unchanged (sse is a URL parameter)");
+        var anth = new Ai.AiProvider { Kind = Ai.AiProviderKind.Anthropic, BaseUrl = "https://api.anthropic.com", Model = "claude-sonnet-4-5" };
+        Check(Ai.AiClient.StreamBody(anth, "{\"x\":1}").Contains("\"stream\":true") && Ai.AiClient.StreamUrl(anth).EndsWith("/v1/messages"), "anthropic stream body + url");
+        Check(new Ai.StreamAccumulator(Ai.AiProviderKind.OpenAi).Empty, "empty stream is detected so the caller can fall back");
     }
 
     // ---------------- nhật ký riêng của từng máy ----------------

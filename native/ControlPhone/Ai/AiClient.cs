@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -292,6 +293,71 @@ public static class AiClient
             return new AiReply { Error = AiSecret.Redact($"HTTP {status}: {ExtractError(text)}", apiKey) };
         try { return ParseChat(p, text); }
         catch (Exception e) { return new AiReply { Error = "Không đọc được câu trả lời: " + AiSecret.Redact(e.Message, apiKey) }; }
+    }
+
+    // ---------------- phát trực tiếp (streaming) ----------------
+    /// <summary>URL cho luồng SSE: Gemini đổi :generateContent thành :streamGenerateContent?alt=sse.</summary>
+    public static string StreamUrl(AiProvider p)
+    {
+        var url = ChatUrl(p);
+        if (p.Kind != AiProviderKind.Gemini) return url;
+        return url.EndsWith(":generateContent")
+            ? url[..^":generateContent".Length] + ":streamGenerateContent?alt=sse"
+            : url;
+    }
+
+    /// <summary>Bật cờ stream trong phần thân yêu cầu (Gemini dùng tham số URL nên thân giữ nguyên).</summary>
+    public static string StreamBody(AiProvider p, string body)
+    {
+        if (p.Kind == AiProviderKind.Gemini) return body;
+        var o = JsonNode.Parse(body) as JsonObject ?? new JsonObject();
+        o["stream"] = true;
+        if (p.Kind == AiProviderKind.OpenAi) o["stream_options"] = new JsonObject { ["include_usage"] = true };
+        return o.ToJsonString();
+    }
+
+    /// <summary>
+    /// Gọi nhà cung cấp ở chế độ phát trực tiếp. Trả về null khi không dùng được (lỗi HTTP, luồng rỗng, mạng) để nơi gọi
+    /// quay lại <see cref="ChatAsync"/> — chức năng đang chạy không bao giờ bị streaming làm hỏng.
+    /// </summary>
+    public static async Task<AiReply?> ChatStreamAsync(AiProvider p, string apiKey, IReadOnlyList<AiMessage> messages,
+        IReadOnlyList<AiToolSpec> tools, Action<string> onDelta, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(p.Model)) return null;
+        AiHttpRequest req;
+        try { req = BuildChat(p, apiKey, messages, tools); } catch { return null; }
+
+        var acc = new StreamAccumulator(p.Kind);
+        var parser = new SseParser();
+        var timeout = TimeSpan.FromSeconds(Math.Clamp(p.TimeoutSeconds <= 0 ? 120 : p.TimeoutSeconds, 10, 900));
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts.CancelAfter(timeout);
+        try
+        {
+            using var msg = new HttpRequestMessage(HttpMethod.Post, StreamUrl(p))
+            {
+                Content = new StringContent(StreamBody(p, req.Body), Encoding.UTF8, "application/json"),
+            };
+            foreach (var (k, v) in req.Headers) msg.Headers.TryAddWithoutValidation(k, v);
+            using var res = await Http.SendAsync(msg, HttpCompletionOption.ResponseHeadersRead, cts.Token).ConfigureAwait(false);
+            if (!res.IsSuccessStatusCode) return null;
+            await using var stream = await res.Content.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+            while (await reader.ReadLineAsync(cts.Token).ConfigureAwait(false) is { } line)
+                foreach (var ev in parser.Feed(line + "\n"))
+                {
+                    var delta = acc.Feed(ev);
+                    if (delta.Length > 0) onDelta(delta);
+                }
+            foreach (var ev in parser.Flush())
+            {
+                var delta = acc.Feed(ev);
+                if (delta.Length > 0) onDelta(delta);
+            }
+            return acc.Empty ? null : acc.Result();
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch { return null; }
     }
 
     static async Task<(int Status, string Body, string? Error)> SendAsync(AiHttpRequest req, int timeoutSeconds, CancellationToken ct)

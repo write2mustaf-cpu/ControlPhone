@@ -1,3 +1,4 @@
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -503,6 +504,50 @@ public sealed class AiChatWindow : Window
         }
     }
 
+    Border? liveBubble;
+    TextBlock? liveText;
+    readonly StringBuilder liveBuffer = new();
+    long liveRendered;
+
+    /// <summary>Bong bóng tạm trong lúc phát trực tiếp: chữ thường (không markdown) cho nhanh, thay bằng bong bóng đầy đủ khi xong.</summary>
+    void AppendLive(string delta)
+    {
+        if (liveBubble == null || liveText == null)
+        {
+            liveBuffer.Clear();
+            liveText = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 13.5, LineHeight = 20 };
+            liveText.SetResourceReference(TextBlock.ForegroundProperty, "Text");
+            liveBubble = new Border
+            {
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(12, 9, 12, 9),
+                Margin = new Thickness(0, 3, 0, 3),
+                HorizontalAlignment = HorizontalAlignment.Left,
+                MaxWidth = Math.Max(420, ActualWidth - 320),
+                Child = liveText,
+            };
+            liveBubble.SetResourceReference(Border.BackgroundProperty, "Bg3");
+            messages.Children.Add(liveBubble);
+            liveRendered = 0;
+        }
+        liveBuffer.Append(delta);
+        var now = Environment.TickCount64;
+        if (now - liveRendered >= 60 || liveBuffer.Length - liveText.Text.Length >= 160)
+        {
+            liveText.Text = liveBuffer.ToString();
+            liveRendered = now;
+            ScrollToEnd();
+        }
+    }
+
+    void DropLive()
+    {
+        if (liveBubble != null) messages.Children.Remove(liveBubble);
+        liveBubble = null;
+        liveText = null;
+        liveBuffer.Clear();
+    }
+
     void OnAgentEvent(AiEvent e)
     {
         switch (e.Kind)
@@ -510,17 +555,23 @@ public sealed class AiChatWindow : Window
             case AiEventKind.Status:
                 status.Text = e.Text == "thinking" ? I18n.T("Đang suy nghĩ…") : I18n.T("Đang thực hiện…");
                 break;
+            case AiEventKind.AssistantDelta:
+                AppendLive(e.Text);
+                break;
             case AiEventKind.AssistantText:
+                DropLive();
                 if (chat != null && chat.Messages.Count > 0 && chat.Messages[^1].Role == "assistant" && chat.Messages[^1].Content == e.Text) AddMessageView(chat.Messages[^1]);
                 else messages.Children.Add(Bubble(e.Text, HorizontalAlignment.Left, "Bg3", "Text"));
                 ScrollToEnd();
                 break;
             case AiEventKind.Error:
+                DropLive();
                 messages.Children.Add(Bubble(e.Text, HorizontalAlignment.Left, "Bg3", "Text", error: true));
                 ScrollToEnd();
                 break;
             case AiEventKind.ToolStart:
             {
+                DropLive();
                 var card = ToolCard(e.Text, I18n.T("Đang thực hiện…"), true, "");
                 messages.Children.Add(card);
                 if (e.Call != null) toolCards[e.Call.Id] = card;
@@ -540,6 +591,7 @@ public sealed class AiChatWindow : Window
                 break;
             }
             case AiEventKind.Stopped:
+                DropLive();
                 status.Text = I18n.T("Đã dừng");
                 break;
             case AiEventKind.Usage:

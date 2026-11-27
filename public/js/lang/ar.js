@@ -770,4 +770,5 @@ export default {
   "Xoá nhật ký": "حذف السجل",
   "Xoá nhật ký máy #{0}": "حذف سجل الهاتف #{0}",
   "Xoá toàn bộ nhật ký của máy này (bộ nhớ và tệp)?": "حذف سجل هذا الهاتف بالكامل (الذاكرة والملف)؟",
+  "Hiện câu trả lời dần dần (streaming) khi nhà cung cấp hỗ trợ": "إظهار الإجابة تدريجياً (streaming) عندما يدعم المزوّد ذلك",
 };

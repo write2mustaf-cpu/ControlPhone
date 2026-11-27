@@ -669,4 +669,13 @@ export default {
   "Xoá nhật ký": "清除日誌",
   "Xoá nhật ký máy #{0}": "清除手機 #{0} 的日誌",
   "Xoá toàn bộ nhật ký của máy này (bộ nhớ và tệp)?": "刪除此手機的全部日誌（記憶體與檔案）？",
+  "Hiện câu trả lời dần dần (streaming) khi nhà cung cấp hỗ trợ": "供應商支援時逐字顯示回答（串流）",
+  "Hiện chi tiết kết quả công cụ trong hội thoại": "在對話中顯示工具結果詳情",
+  "Hiện kế hoạch thao tác trước khi thực hiện": "執行前顯示操作計畫",
+  "Hỏi tôi trước các thao tác nhạy cảm (cài đặt, gỡ, shell, gửi văn bản…)": "敏感操作前詢問我（安裝、卸載、shell、傳送文字…）",
+  "Số bước công cụ tối đa cho mỗi yêu cầu": "每個請求的最大工具步數",
+  "Tuỳ chọn trợ lý": "助理選項",
+  "Hướng dẫn thêm cho trợ lý (tuỳ chọn)": "給助理的附加說明（選填）",
+  "Các tuỳ chọn này áp dụng cho mọi hội thoại. Khoá API không lưu ở đây — xem danh sách nhà cung cấp.": "這些選項適用於所有對話。API 金鑰不儲存在此 — 請查看供應商清單。",
+  "Đã lưu tuỳ chọn trợ lý": "助理選項已儲存",
 };

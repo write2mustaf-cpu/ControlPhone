@@ -3,6 +3,29 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.8.0 — Answers appear while they are written
+
+### Streaming replies (the last big item of the original brief)
+- `Ai/AiStream.cs`: an SSE line parser that survives chunks cut mid-line, CRLF and comment/keep-alive lines, plus a
+  `StreamAccumulator` per provider — OpenAI-compatible (`delta.content`, `delta.tool_calls` merged by index), Anthropic
+  (`message_start` / `content_block_start` / `text_delta` / `input_json_delta` / `message_delta`) and Gemini
+  (`parts[].text`, `functionCall`, `usageMetadata`). Usage tokens are taken from the stream, so the counters stay right.
+- `AiClient.ChatStreamAsync` + `StreamUrl` / `StreamBody`: `stream: true` for OpenAI (with `stream_options.include_usage`)
+  and Anthropic, `:streamGenerateContent?alt=sse` for Gemini, body untouched there.
+- Safety first: any stream failure (HTTP error, empty stream, network, unknown shape) returns `null` and `AiAgent` retries
+  with the normal `ChatAsync`, so a broken stream can never swallow an answer. Cancelling still stops immediately.
+- Chat window: a temporary plain-text bubble is appended as deltas arrive (throttled to ~60 ms / 160 chars), then replaced
+  by the full markdown bubble when the answer completes; the live bubble is dropped on error, stop or a tool card.
+- Toggle: *Assistant options → Show the answer as it is written (streaming)*, on by default.
+
+### Also
+- The AI assistant options dialog was Vietnamese-only in the other five languages; its nine labels are now translated.
+
+### Verification
+- Self-check 175 → **196**: SSE splitting/joining/CRLF/comments/flush, OpenAI text + fragmented tool calls + usage,
+  Anthropic text/tool blocks/usage, Gemini parts/functionCall/usage, stream URL and body per provider, and the
+  empty-stream fallback contract. No network needed.
+
 ## 3.7.0 — A separate log for every phone
 
 ### Per-phone log (new, requested in the original brief)

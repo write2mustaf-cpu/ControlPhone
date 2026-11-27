@@ -210,6 +210,13 @@ the operation log, and keeps your device names and numbers.
 - **Navigation bar visible in games on Android 10** — select the phones → right-click → ADB commands → *Hide 3-button bar for the current app*.
 - **No video in the browser** — use a recent Microsoft Edge or Google Chrome (WebCodecs required).
 
+### Streaming answers
+
+When the provider supports server-sent events (OpenAI, Anthropic, Gemini and every OpenAI-compatible endpoint), the
+assistant's answer is shown while it is being written instead of after a pause. It is a display optimisation only: if the
+stream fails, returns nothing or the provider does not support it, the request is retried the normal way, so the feature
+can never make an answer disappear. Toggle it in *AI → Assistant options → Show the answer as it is written*.
+
 ### Per-phone log
 
 Right-click a phone → *Phone log…* shows that phone's own history: every state change (`offline → connecting → online`,
