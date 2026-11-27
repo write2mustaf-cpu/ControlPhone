@@ -3,6 +3,28 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.12.0 — Typing text that adb cannot carry, and reporting it honestly
+
+### The bug
+Text was sent with `ControlSession?.TypeText(...)`. With no open mirror session the `?.` made the call a silent no-op, and
+the AI `send_text` tool still answered `OK: typed N character(s) on N phone(s)`. Asking the assistant to type Arabic on a
+phone whose mirror was closed produced a success message and nothing on the screen.
+
+### The fix
+- New `Core/Typing.cs`: `SendAsync(phone, text, enter)` picks the route per phone — open session (Unicode via the
+  session's clipboard paste), otherwise `adb shell input text` when the text is plain ASCII, otherwise a refusal that
+  names the reason. `AdbArg` escapes spaces as `%s` and shell metacharacters, flattens tabs/newlines.
+- `PasteToPhones` now awaits per-phone delivery and toasts the real counts ("pasted into 3 phones", "2 phones did not
+  receive the text — <reason>") instead of assuming the clipboard reached everyone.
+- AI `send_text` returns `OK` / `PARTIAL` / `FAIL` with one line per phone, and `AiTools.SendText` maps `PARTIAL` to a
+  failed tool result so the assistant cannot claim success on a phone that never got the text. The tool description now
+  states the ASCII/session rule.
+
+### Verification
+- Self-check 237 → **251**: ASCII detection (Arabic, Vietnamese, multi-line, over-long, empty), the session rule, `%s`
+  for spaces, escaped `;|&` and quotes (a phone-side shell injection cannot be typed by accident), tabs flattened,
+  `CanUseAdb` agreement with `AdbArg`, and single-line, ellipsis-terminated previews.
+
 ## 3.11.0 — A running batch can be steered, and failures can be retried
 
 ### Per-phone cancel and retry (queue hardening)

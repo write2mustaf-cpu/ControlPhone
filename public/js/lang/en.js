@@ -810,4 +810,11 @@ export default {
   "Không còn máy lỗi để thử lại": "No failed phones left to retry",
   "Đang thử lại trên {0} máy": "Retrying on {0} phones",
   "Thử lại: {0}": "Retry: {0}",
+  "Không có chữ để gõ": "Nothing to type",
+  "Máy đang không kết nối": "Phone is not connected",
+  "qua phiên xem": "via the mirror session",
+  "Chữ này cần phiên xem của máy (mở xem hoặc màn hình lớn): adb chỉ gõ được ASCII": "This text needs an open mirror session on that phone (open the phone or the big screen): adb can only type ASCII",
+  "Máy chưa sẵn sàng": "Phone is not ready yet",
+  "qua adb": "via adb",
+  "{0} máy không nhận được chữ — {1}": "{0} phone(s) did not receive the text — {1}",
 };

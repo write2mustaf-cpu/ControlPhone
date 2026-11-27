@@ -212,12 +212,18 @@ public partial class MainWindow : IAiHost
             {
                 var text = args.TryGetValue("text", out var tv) ? tv?.ToString() ?? "" : "";
                 if (text == "") return "FAIL: missing text";
-                await OnUiAsync(() =>
+                var targets = ids.Select(manager.Get).Where(d => d is { IsOnline: true }).Cast<PhoneDevice>().ToList();
+                if (targets.Count == 0) return "FAIL: no online phone in the target list";
+                int ok = 0;
+                var lines = new List<string>();
+                foreach (var d in targets)
                 {
-                    var targets = ids.Select(manager.Get).Where(d => d is { IsOnline: true }).Cast<PhoneDevice>().ToList();
-                    PasteToPhones(targets, text, false);
-                });
-                return $"OK: typed {text.Length} character(s) on {ids.Count} phone(s).";
+                    var (sent, msg) = await Typing.SendAsync(d, text, false);
+                    if (sent) ok++;
+                    lines.Add($"  {(sent ? "OK" : "FAIL")} {manager.LabelOf(d)} — {msg}");
+                }
+                var head = ok == targets.Count ? "OK" : ok == 0 ? "FAIL" : "PARTIAL";
+                return $"{head}: typed \"{Typing.Preview(text)}\" on {ok}/{targets.Count} phone(s)\n" + string.Join("\n", lines);
             }
             case "action":
             {

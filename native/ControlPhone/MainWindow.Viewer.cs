@@ -214,7 +214,7 @@ public partial class MainWindow
         switch (act)
         {
             case "@paste":
-                if (Clipboard.ContainsText()) PasteToPhones(TargetsFor(d), Clipboard.GetText());
+                if (Clipboard.ContainsText()) _ = PasteToPhones(TargetsFor(d), Clipboard.GetText());
                 else Ui.Toast("Clipboard máy tính đang trống (chỉ dán được văn bản)", "err");
                 break;
             case "@shotclip":

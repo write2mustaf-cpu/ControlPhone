@@ -13,6 +13,8 @@ Repository notes for AI agents working on ControlPhone (multi-phone Android cont
       corrections are logged to the operation log. **Add new settings here too**, otherwise a hand-edited file wins.
     - `DeviceVideo.cs` — per-phone grid/viewer resolution, fps, bitrate (null override = global). Used by
       `DeviceManager.ThumbOptions/HqOptions`; read metas with `Store.MetaOrNull` (never `Store.Meta` in hot paths).
+    - `Typing` (`Core/Typing.cs`) — text delivery: session (Unicode via clipboard paste) when open, `adb shell input text`
+      for plain ASCII only; `AdbArg` escapes spaces/metacharacters; `SendAsync` returns (ok, how it went) per phone.
     - `BatchTask` (`Core/Actions.cs`) — keeps `Payload` + `DeviceIds` so `Actions.Retry` can re-run the same operation on
       `FailedIds` only; `CancelDevice(id)` cancels one phone (`ShouldSkip`), `Stop()` cancels the queue.
     - `Shortcuts.cs` — shortcut table (`Key`+`ModifierKeys` → action id) with a pure `Match`, `Gesture` for the help
@@ -56,7 +58,7 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (237 checks as of 3.11.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (251 checks as of 3.12.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
 ## Gotchas
