@@ -21,6 +21,13 @@ public sealed class AiProvider
     public bool IsDefault { get; set; }
     public DateTime? LastOk { get; set; }
     public string LastError { get; set; } = "";
+    /// <summary>Thống kê sử dụng luỹ kế (chỉ số do nhà cung cấp trả về; 0 nếu nhà cung cấp không báo).</summary>
+    public long Requests { get; set; }
+    public long TokensIn { get; set; }
+    public long TokensOut { get; set; }
+    public DateTime? LastUsed { get; set; }
+
+    public long TokensTotal => TokensIn + TokensOut;
 
     public bool HasKey => !string.IsNullOrEmpty(KeyProtected);
     public string Display => string.IsNullOrEmpty(Name) ? Model : Name;
@@ -51,6 +58,8 @@ public sealed class AiMessage
 public sealed record AiUsage(int InputTokens, int OutputTokens)
 {
     public int Total => InputTokens + OutputTokens;
+    public static AiUsage operator +(AiUsage a, AiUsage b) => new(a.InputTokens + b.InputTokens, a.OutputTokens + b.OutputTokens);
+    public bool Any => Total > 0;
 }
 
 /// <summary>Mô tả công cụ gửi cho AI (JSON Schema cho tham số) + cờ nhạy cảm cần người dùng đồng ý.</summary>

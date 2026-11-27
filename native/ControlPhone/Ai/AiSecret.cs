@@ -83,6 +83,7 @@ public static class AiSecret
         s = System.Text.RegularExpressions.Regex.Replace(s, @"([?&](?:key|api_key|apikey|access_token|token)=)[^&\s]+", "$1••••", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         s = System.Text.RegularExpressions.Regex.Replace(s, @"(Bearer\s+)[A-Za-z0-9._\-]{8,}", "$1••••");
         s = System.Text.RegularExpressions.Regex.Replace(s, @"(sk-[A-Za-z0-9_\-]{6,})", "••••");
+        s = System.Text.RegularExpressions.Regex.Replace(s, @"(AIza[A-Za-z0-9_\-]{10,})", "••••");
         return s;
     }
 }

@@ -36,11 +36,7 @@ public partial class App : Application
             return;
         }
         if (!first) { try { single.WaitOne(10000); } catch (AbandonedMutexException) { } } // khởi động lại (đổi ngôn ngữ): chờ bản cũ thoát
-        DispatcherUnhandledException += (_, ex) =>
-        {
-            MessageBox.Show(ex.Exception.Message, "ControlPhone", MessageBoxButton.OK, MessageBoxImage.Warning);
-            ex.Handled = true;
-        };
+        Crash.Install(this);
         // tránh các lần dọn rác dài làm khựng hình / chuột (luồng video cấp phát liên tục)
         System.Runtime.GCSettings.LatencyMode = System.Runtime.GCLatencyMode.SustainedLowLatency;
         OfferPreviousData();

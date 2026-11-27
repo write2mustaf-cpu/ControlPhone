@@ -25,4 +25,6 @@ Please include:
 2. The connection diagnostics: ⋯ → *Connection diagnostics* → **Copy report**.
 3. The operation log: ask the assistant, or use ⋯ → *Connection diagnostics*, or attach the newest file in
    `data\logs`.
-4. What you did, what you expected, and what happened (a screenshot of the tile helps).
+4. If the app showed an unexpected error, the *Technical report* card at the bottom of this window opens the log
+   folder and copies a ready-made report (`data\logs\crash.log`). Both are already stripped of API keys.
+5. What you did, what you expected, and what happened (a screenshot of the tile helps).

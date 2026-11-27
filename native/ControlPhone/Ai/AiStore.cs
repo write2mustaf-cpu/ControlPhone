@@ -131,6 +131,21 @@ public static class AiStore
         Save();
     }
 
+    /// <summary>Cộng dồn thống kê sử dụng của một nhà cung cấp (số liệu do nhà cung cấp trả về trong phản hồi).</summary>
+    public static void AddUsage(string providerId, AiUsage usage)
+    {
+        lock (Gate)
+        {
+            var p = State.Providers.FirstOrDefault(x => x.Id == providerId);
+            if (p == null || !usage.Any) return;
+            p.Requests++;
+            p.TokensIn += usage.InputTokens;
+            p.TokensOut += usage.OutputTokens;
+            p.LastUsed = DateTime.Now;
+        }
+        Save();
+    }
+
     public static void SetDefault(string id)
     {
         foreach (var p in Providers) p.IsDefault = p.Id == id;

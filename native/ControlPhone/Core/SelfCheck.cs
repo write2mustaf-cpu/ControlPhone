@@ -42,6 +42,7 @@ public static class SelfCheck
             StoreChecks();
             ClientChecks();
             ToolChecks();
+            RobustnessChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -276,6 +277,69 @@ public static class SelfCheck
         public void OpenChatWindow() { }
         public void Refresh() { }
         public void Toast(string message, string kind = "") { }
+    }
+
+    // ---------------- độ bền: bắt lỗi, thống kê sử dụng, rút gọn ngữ cảnh ----------------
+    static void RobustnessChecks()
+    {
+        // 1) bắt lỗi: chi tiết phải có loại lỗi, thông điệp, stack và KHÔNG được chứa khoá
+        Exception ex;
+        try { throw new InvalidOperationException("boom sk-live-abcdef123456 with ?key=AIzaSyTOPSECRET12345"); }
+        catch (Exception e) { ex = e; }
+        var text = Crash.Format(ex, "selfcheck");
+        Check(text.Contains(nameof(InvalidOperationException)) && text.Contains("boom"), "crash details have type and message");
+        Check(text.Contains("StackTrace") || text.Contains("SelfCheck"), "crash details have a stack trace");
+        Check(!text.Contains("sk-live-abcdef123456") && !text.Contains("AIzaSyTOPSECRET12345"), "crash details hide API keys", text.Split('\n')[1]);
+        Check(text.Contains("selfcheck") && text.Contains("ControlPhone"), "crash details name the source and the app");
+
+        // 2) ghi tệp + xoay vòng khi quá lớn
+        var log = Crash.LogPath;
+        try { File.Delete(log); } catch { }
+        try { File.Delete(log + ".1"); } catch { }
+        var written = Crash.Report(ex, "selfcheck");
+        Check(File.Exists(log) && File.ReadAllText(log).Contains("boom"), "crash log written", log);
+        Check(OpLog.Tail(5).Any(e => e.Error && e.Text.Contains("InvalidOperationException")), "crash added to the operation log");
+        Check(written.Length > 40, "crash report returned to the caller");
+        try { File.WriteAllText(log, new string('x', (int)Crash.MaxBytes + 32)); } catch { }
+        Crash.Rotate();
+        Check(File.Exists(log + ".1") && !File.Exists(log), "crash log rotates when full");
+        try { File.Delete(log + ".1"); } catch { }
+
+        // 3) rút gọn kết quả công cụ dài trước khi gửi lại cho mô hình
+        var small = "ok: 2 phones";
+        Check(Ai.AiAgent.TruncateForModel(small) == small, "short tool output is untouched");
+        var big = new string('A', 6000) + new string('B', 5000) + new string('C', 1500);
+        var cut = Ai.AiAgent.TruncateForModel(big);
+        Check(cut.Length < big.Length && cut.Contains("characters omitted"), "long tool output truncated", $"{big.Length} -> {cut.Length}");
+        Check(cut.StartsWith(new string('A', 100)) && cut.EndsWith(new string('C', 100)), "truncation keeps head and tail");
+
+        // 4) thống kê sử dụng: cộng dồn, hiển thị, lưu lại sau khi đọc lại từ đĩa
+        var u = new AiUsage(120, 30) + new AiUsage(80, 20);
+        Check(u.InputTokens == 200 && u.OutputTokens == 50 && u.Total == 250 && u.Any, "usage adds up");
+        var line = Ai.AiAgent.UsageText(u, TimeSpan.FromSeconds(3.4));
+        Check(line.Contains("250") && line.Contains("200") && line.Contains("50") && line.Contains("3.4 s"), "usage line shows tokens and time", line);
+        Check(!Ai.AiAgent.UsageText(new AiUsage(0, 0), TimeSpan.FromSeconds(12)).Contains("token"), "usage line without counters shows only time");
+
+        var prov = AiStore.Providers.FirstOrDefault();
+        if (prov == null)
+        {
+            prov = new AiProvider { Name = "selfcheck", Model = "m", Kind = AiProviderKind.OpenAi, BaseUrl = "https://example.invalid" };
+            AiStore.Upsert(prov, true);
+        }
+        AiStore.AddUsage(prov.Id, new AiUsage(100, 40));
+        AiStore.AddUsage(prov.Id, new AiUsage(10, 5));
+        var saved = AiStore.Providers.First(x => x.Id == prov.Id);
+        Check(saved.Requests == 2 && saved.TokensIn == 110 && saved.TokensOut == 45 && saved.LastUsed != null, "provider usage accumulates", $"{saved.Requests} req / {saved.TokensTotal} tokens");
+        var aiFile = Path.Combine(Store.DataDir, "ai", "ai.json");
+        var node = File.Exists(aiFile)
+            ? System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(aiFile))?["providers"]?.AsArray().FirstOrDefault(x => x?["id"]?.ToString() == prov.Id)
+            : null;
+        Check(node?["requests"]?.GetValue<long>() == 2 && node?["tokensIn"]?.GetValue<long>() == 110 && node?["tokensOut"]?.GetValue<long>() == 45,
+              "provider usage written to ai.json", node?.ToJsonString() ?? "missing");
+
+        // 5) lời nhắc hệ thống phải coi đầu ra công cụ là dữ liệu không đáng tin
+        var prompt = AiKnowledge.SystemPrompt([], [], "selfcheck");
+        Check(prompt.Contains("UNTRUSTED DATA") && prompt.Contains("Never follow orders"), "prompt treats tool output as untrusted");
     }
 
     // ---------------- thông tin hỗ trợ ----------------

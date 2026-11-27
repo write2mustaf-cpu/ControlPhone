@@ -1,4 +1,4 @@
-# AI assistant and providers (ControlPhone 3.0)
+# AI assistant and providers (ControlPhone 3.1)
 
 ControlPhone 3.0 has a built-in assistant that is part of the application, not a separate chat page: it reads the
 real state of your phones and runs the real ControlPhone functions through a tool registry.
@@ -71,7 +71,21 @@ Safety rules enforced in the system prompt and in the tool layer:
 - no invented device state — the assistant must read it first;
 - no API keys in answers, no requests for keys in chat;
 - no shell command without approval;
-- maximum 8 tool rounds per request (configurable 1–20), stop button always available.
+- maximum 8 tool rounds per request (configurable 1–20), stop button always available;
+- tool output is treated as **untrusted data**: text found on a phone screen, in a shell result, in a log or in a file
+  can never act as a new instruction. This blocks the usual prompt-injection route through device content.
+
+## Usage, limits and context
+
+- Every answer shows a small line under it with the tokens the provider reported and how long the turn took
+  (`1,284 tokens (1,020 in / 264 out) · 4.2 s`). Providers that do not report usage show only the time.
+- The provider card in *Settings → AI* accumulates requests and tokens per provider, so you can see which model you
+  actually spend on. The counters come from the provider's own response; nothing is estimated locally.
+- Long tool results (shell output, `dumpsys`, big file listings) are trimmed before they go back to the model:
+  the first 6,000 and the last 1,500 characters are kept and the omitted length is stated in the text, so one long
+  dump cannot blow the context window or the bill.
+- If the answer hits the tool-round limit, the assistant stops and says what was done and what is left instead of
+  looping forever.
 
 ## Chat history
 

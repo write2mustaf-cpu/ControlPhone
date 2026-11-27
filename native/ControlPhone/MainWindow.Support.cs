@@ -32,6 +32,19 @@ public partial class MainWindow
         catch (Exception e) { Ui.Toast(T("Không mở được liên kết") + ": " + e.Message, "err", 6000); }
     }
 
+    /// <summary>Báo cáo kỹ thuật ngắn để người dùng dán vào email/Telegram khi báo lỗi.</summary>
+    string ReportText()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("ControlPhone " + (typeof(App).Assembly.GetName().Version?.ToString(3) ?? "?"));
+        sb.AppendLine("Windows " + Environment.OSVersion.Version + " · .NET " + Environment.Version + " · " + I18n.Lang);
+        sb.AppendLine("Data: " + Store.DataDir);
+        try { sb.AppendLine(Diagnostics()); } catch (Exception e) { sb.AppendLine("diagnostics failed: " + e.Message); }
+        sb.AppendLine("--- recent operations ---");
+        try { sb.AppendLine(OpLog.Format(40)); } catch { }
+        return Ai.AiSecret.Redact(sb.ToString().TrimEnd(), null);
+    }
+
     void DlgSupport()
     {
         var d = new Dlg("Liên hệ & hỗ trợ", 700);
@@ -41,8 +54,8 @@ public partial class MainWindow
         void Card(string title, string subtitle, string value, (string Label, string Icon, Action Run)[] actions)
         {
             var sp = new StackPanel();
-            sp.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.Bold, FontSize = 13.5, Margin = new Thickness(0, 0, 0, 2) });
-            var sub = new TextBlock { Text = subtitle, FontSize = 11.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 6) };
+            sp.Children.Add(new TextBlock { Text = T(title), FontWeight = FontWeights.Bold, FontSize = 13.5, Margin = new Thickness(0, 0, 0, 2) });
+            var sub = new TextBlock { Text = T(subtitle), FontSize = 11.5, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 6) };
             sub.SetResourceReference(TextBlock.ForegroundProperty, "Muted");
             sp.Children.Add(sub);
             var val = new TextBox { Text = value, IsReadOnly = true, FontFamily = new FontFamily("Consolas"), Margin = new Thickness(0, 0, 0, 8) };
@@ -96,6 +109,12 @@ public partial class MainWindow
         var all = Ui.Btn("Sao chép tất cả liên kết", "copy", "Btn", (_, _) => CopyText("Tất cả liên kết", SupportInfo.AllLinks()));
         all.Margin = new Thickness(0, 0, 0, 8);
         d.Body.Children.Add(all);
+
+        Card("Báo lỗi kỹ thuật", "Khi cần hỗ trợ, gửi kèm thông tin chẩn đoán và tệp nhật ký lỗi — chúng không chứa khoá API.", Crash.LogPath,
+        [
+            ("Mở thư mục nhật ký", "folder", () => Crash.OpenLogFolder()),
+            ("Sao chép thông tin chẩn đoán", "copy", () => CopyText("Thông tin chẩn đoán", ReportText())),
+        ]);
 
         d.AddAction("Đóng", "Primary");
         d.ShowDialog();
