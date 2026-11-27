@@ -3,6 +3,25 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.5.0 — One-click diagnostics bundle for support
+
+### Diagnostics bundle (new)
+- *Links & support → Diagnostics bundle → Export…* writes a single ZIP: `versions.txt` (app, Windows, .NET, ADB path,
+  FFmpeg, render tier, CPU, data folder), `devices.txt` (number, label, transport, state, Android — **no serial numbers**),
+  `oplog.txt` (last 200 operations), `logs/crash.log` (+ `.1`), `settings/config.json` and `settings/ui.json`.
+- **Privacy by construction**: `data/ai/ai.json` is never read or included, and every text file goes through
+  `AiSecret.Redact` again before being written (`sk-…`, `AIza…`, `Bearer …`, `?key=` masked). A README inside the ZIP
+  states exactly what is and is not inside, so the user knows what they are sending.
+- Robust: an existing file is replaced, a missing log/config is skipped instead of failing the export, a file larger than
+  2 MB is truncated with a marker, and a read error is recorded as `<name>.error.txt` rather than aborting.
+- Errors and successes both go to the operation log, and the export opens the containing folder.
+
+### Verification
+- Self-check 137 → **146** checks: the bundle is built for real into a temp folder and read back — expected entries exist,
+  `ai.json` is absent, an injected `sk-SELFTESTSECRET…` string is masked, the device list and versions are present, the
+  default file name is safe, rebuilding over an existing file works, and an empty device list is explained.
+- CI builds, runs the self-check twice (build + installed copy), builds the installer and uploads both assets.
+
 ## 3.4.0 — Stop a running batch operation
 
 ### Stop button for every batch (new)
