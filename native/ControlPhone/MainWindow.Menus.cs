@@ -74,6 +74,7 @@ public partial class MainWindow
     [
         new("Trợ lý AI", "chat", () => ShowAiChat()),
         new("Nhà cung cấp AI…", "key", () => AiProvidersDialog.Show(this)),
+        new(T("Phím tắt"), "keyboard", DlgShortcuts),
         new("Liên hệ & hỗ trợ", "globe", DlgSupport),
         new("Kiểm tra cập nhật…", "refresh", () => _ = CheckUpdates(manual: true)),
         new("Xuất / nhập cài đặt…", "upload", DlgExportImport),

@@ -3,6 +3,24 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.10.0 — Keyboard shortcuts for the grid
+
+### Shortcuts (12, all working, listed in-app)
+`Ctrl+F` search · `Esc` clear search/selection · `F5` refresh phone info · `Ctrl+A` select all visible · `Ctrl+I` invert ·
+`Ctrl+L` solo selection · `Ctrl+Shift+L` show all · `Ctrl+P` pause/resume · `Ctrl+R` reconnect streams · `Ctrl+Shift+A`
+assistant · `Ctrl+Shift+S` screenshot · `F1` the list itself.
+
+- `Core/Shortcuts.cs` holds the table (`Key` + `ModifierKeys` → action id), a pure `Match` (Windows key ignored, extra
+  modifiers rejected), `Gesture` for display, and `WorksWhileTyping` so a `TextBox`/`ComboBox` keeps its keystrokes —
+  only `Esc`, `F1` and `Ctrl+F` pass through.
+- Help dialog (also in the main menu → *Keyboard shortcuts*): two-column list built from the same table, so the docs and
+  the behaviour cannot drift.
+
+### Verification
+- Self-check 213 → **228**: every combination matched (including `Ctrl+L` vs `Ctrl+Shift+L` and `Ctrl+A` vs `Ctrl+Shift+A`),
+  bare letters and extra modifiers rejected, Windows key ignored, unique action ids, labels present, readable gesture text
+  (`Ctrl+Shift+A`, `Esc`), and the typing-safety rule.
+
 ## 3.9.0 — Back up everything that is yours
 
 ### Full user-data backup / restore
