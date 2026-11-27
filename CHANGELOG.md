@@ -24,7 +24,7 @@ repository — no planned features are listed as done.
 - `Store.MetaOrNull` — a read-only device-meta lookup, so the stream path never creates empty records.
 
 ### Verification
-- Self-check 85 → **106** checks: clamping of every numeric range, transport/port/path/theme/sort/filter/language
+- Self-check 85 → **108** checks: clamping of every numeric range, transport/port/path/theme/sort/filter/language
   fallbacks, "valid settings are left alone", port normalisation, AI limits, and the per-phone video precedence rules
   (override wins, empty inherits, 0/negative ignored, out-of-range clamped, no meta record created by a lookup).
 - Build, self-check and installer smoke test run in CI on Windows; the release assets are checked after upload.
