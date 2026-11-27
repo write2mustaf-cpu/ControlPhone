@@ -43,6 +43,7 @@ public static class SelfCheck
             ClientChecks();
             ToolChecks();
             RobustnessChecks();
+            SanitizerChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -340,6 +341,58 @@ public static class SelfCheck
         // 5) lời nhắc hệ thống phải coi đầu ra công cụ là dữ liệu không đáng tin
         var prompt = AiKnowledge.SystemPrompt([], [], "selfcheck");
         Check(prompt.Contains("UNTRUSTED DATA") && prompt.Contains("Never follow orders"), "prompt treats tool output as untrusted");
+    }
+
+    // ---------------- hợp lệ hoá cài đặt + thông số hình ảnh riêng từng máy ----------------
+    static void SanitizerChecks()
+    {
+        // cấu hình hỏng (sửa tay / bản cũ) phải được kéo về khoảng hợp lệ thay vì mở luồng với số vô lý
+        var bad = new Settings
+        {
+            ThumbMaxSize = 0, ThumbBitRate = 1, ThumbFps = 0,
+            HqMaxSize = 99_999, HqBitRate = 5, HqFps = 1000,
+            MaxParallelStart = 0, MaxParallelJobs = 500,
+            PreferTransport = "carrier-pigeon", LanPorts = "5555, 99999 abc;0", ScreenshotDir = "bad\u0001dir",
+        };
+        var fixes = SettingsSanitizer.Apply(bad);
+        Check(fixes.Count >= 9, "sanitizer reports what it fixed", fixes.Count + " fixes");
+        Check(bad.ThumbMaxSize == 160 && bad.ThumbFps == 1 && bad.ThumbBitRate == 30_000, "thumbnail settings clamped", $"{bad.ThumbMaxSize}/{bad.ThumbFps}/{bad.ThumbBitRate}");
+        Check(bad.HqMaxSize == 2560 && bad.HqFps == 60 && bad.HqBitRate == 500_000, "viewer settings clamped", $"{bad.HqMaxSize}/{bad.HqFps}/{bad.HqBitRate}");
+        Check(bad.MaxParallelStart == 1 && bad.MaxParallelJobs == 50, "parallel limits clamped");
+        Check(bad.PreferTransport == "usb", "unknown transport falls back to usb");
+        Check(bad.LanPorts == "5555", "invalid ports dropped", bad.LanPorts);
+        Check(!string.IsNullOrWhiteSpace(bad.ScreenshotDir) && bad.ScreenshotDir.IndexOfAny(Path.GetInvalidPathChars()) < 0, "invalid screenshot folder replaced");
+        var good = new Settings { ScreenshotDir = Path.Combine(Path.GetTempPath(), "cp-shots") };
+        Check(SettingsSanitizer.Apply(good).Count == 0, "valid settings are left alone", string.Join(",", SettingsSanitizer.Apply(good)));
+
+        Check(SettingsSanitizer.NormalizePorts("5555, 15555 5555") == "5555,15555", "ports deduplicated and normalised", SettingsSanitizer.NormalizePorts("5555, 15555 5555"));
+        Check(SettingsSanitizer.NormalizePorts("") == "5555" && SettingsSanitizer.NormalizePorts("70000") == "5555", "ports fall back to 5555");
+
+        var ui = new UiPrefs { TileW = double.NaN, Sort = "hacked", Filter = "nonsense", Theme = "neon", Lang = "xx-YY", ShellHist = [.. Enumerable.Repeat("ls", 80)] };
+        var uiFixes = SettingsSanitizer.Apply(ui);
+        Check(ui.TileW == 180 && ui.Sort == "num" && ui.Filter == "all" && ui.Theme == "dark", "ui prefs sanitized", string.Join(",", uiFixes));
+        Check(ui.Lang == "", "unknown language reset to system default");
+        Check(ui.ShellHist.Count == 50, "shell history trimmed");
+        Check(SettingsSanitizer.IsValidFilter("group:Phòng A") && SettingsSanitizer.IsValidFilter("bad") && !SettingsSanitizer.IsValidFilter("group:"), "filter validation");
+
+        var ai = new Ai.AiSettings { MaxToolRounds = 999, ExtraSystemPrompt = new string('x', 9000) };
+        SettingsSanitizer.Apply(ai);
+        Check(ai.MaxToolRounds == 20 && ai.ExtraSystemPrompt.Length == 4000, "ai settings clamped");
+
+        // thông số hình ảnh riêng từng máy: ghi đè thắng, để trống thì theo chung, giá trị vô lý bị kẹp
+        var st = new Settings { ThumbMaxSize = 480, ThumbFps = 15, ThumbBitRate = 600_000, HqMaxSize = 1280, HqFps = 30, HqBitRate = 4_000_000 };
+        var inherit = DeviceVideo.Thumb(null, st);
+        Check(inherit == new VideoPlan(480, 600_000, 15), "no override uses global thumbnail settings", inherit.ToString());
+        var weak = new DeviceMeta { ThumbMaxSize = 360, ThumbFps = 8 };
+        var weakPlan = DeviceVideo.Thumb(weak, st);
+        Check(weakPlan.MaxSize == 360 && weakPlan.MaxFps == 8 && weakPlan.BitRate == 600_000, "per-phone override applied", weakPlan.ToString());
+        Check(DeviceVideo.Hq(weak, st) == new VideoPlan(1280, 4_000_000, 30), "phones without viewer overrides keep the global ones");
+        var strong = new DeviceMeta { HqMaxSize = 1920, HqFps = 60, HqBitRate = 8_000_000 };
+        Check(DeviceVideo.Hq(strong, st) == new VideoPlan(1920, 8_000_000, 60), "viewer override applied", DeviceVideo.Hq(strong, st).ToString());
+        Check(DeviceVideo.Thumb(new DeviceMeta { ThumbFps = 0, ThumbMaxSize = -5 }, st) == inherit, "zero/negative overrides are ignored");
+        Check(DeviceVideo.Thumb(new DeviceMeta { ThumbFps = 500, ThumbMaxSize = 9000 }, st) == new VideoPlan(1920, 600_000, 60), "out-of-range overrides clamped");
+        Check(DeviceVideo.HasOverrides(weak) && !DeviceVideo.HasOverrides(new DeviceMeta()) && !DeviceVideo.HasOverrides(null), "override detection");
+        Check(!DeviceVideo.HasOverrides(Store.MetaOrNull(null)) && Store.MetaOrNull("missing-device") == null, "meta lookup does not create entries");
     }
 
     // ---------------- thông tin hỗ trợ ----------------

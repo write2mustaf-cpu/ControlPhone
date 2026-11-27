@@ -812,12 +812,13 @@ public sealed class DeviceManager : IDisposable
     ScrcpyOptions ThumbOptions(PhoneDevice d)
     {
         var s = Store.Settings;
+        var plan = DeviceVideo.Thumb(Store.MetaOrNull(d.Id), s);
         return new ScrcpyOptions
         {
             // KHÔNG dùng stay_awake của scrcpy: nó bắt bước dọn dẹp (CleanUp) của server đọc/ghi cài đặt qua API ẩn — ngay sau
             // khi máy khởi động lại API đó chưa sẵn sàng → server chết (NullPointerException) → máy vừa reboot không vào được.
             // Giữ máy thức bằng lệnh settings thường (EnsureStayOn) thay thế.
-            MaxSize = s.ThumbMaxSize, BitRate = s.ThumbBitRate, MaxFps = s.ThumbFps, PowerOn = s.PowerOnConnect,
+            MaxSize = plan.MaxSize, BitRate = plan.BitRate, MaxFps = plan.MaxFps, PowerOn = s.PowerOnConnect,
             StayAwake = false, Video = ThumbWantsVideo(d), Encoder = GridEncoder(d), PreferHardware = PreferHw(d), CodecOptions = !d.NoCodecOptions,
         };
     }
@@ -825,7 +826,8 @@ public sealed class DeviceManager : IDisposable
     ScrcpyOptions HqOptions(PhoneDevice d)
     {
         var s = Store.Settings;
-        return new ScrcpyOptions { MaxSize = s.HqMaxSize, BitRate = s.HqBitRate, MaxFps = s.HqFps, PowerOn = s.PowerOnConnect, PreferHardware = !d.NoSwEncoder, CodecOptions = !d.NoCodecOptions };
+        var plan = DeviceVideo.Hq(Store.MetaOrNull(d.Id), s);
+        return new ScrcpyOptions { MaxSize = plan.MaxSize, BitRate = plan.BitRate, MaxFps = plan.MaxFps, PowerOn = s.PowerOnConnect, PreferHardware = !d.NoSwEncoder, CodecOptions = !d.NoCodecOptions };
     }
 
     void EnsureThumb(PhoneDevice d)

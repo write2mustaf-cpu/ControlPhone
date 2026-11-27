@@ -86,6 +86,7 @@ public static class AiStore
                 st.Providers ??= [];
                 st.Settings ??= new();
                 st.Chats ??= [];
+                Core.SettingsSanitizer.Apply(st.Settings);
                 return st;
             }
         }

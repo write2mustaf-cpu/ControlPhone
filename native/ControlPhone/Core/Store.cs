@@ -71,6 +71,12 @@ public sealed class DeviceMeta
     public bool PcKeyboard { get; set; }
     /// <summary>Bàn phím trước khi bật chế độ trên (để trả lại khi tắt).</summary>
     public string? PrevIme { get; set; }
+    // Ghi đè hình ảnh riêng của máy này (null = dùng cài đặt chung)
+    public int? ThumbMaxSize { get; set; }
+    public int? ThumbFps { get; set; }
+    public int? HqMaxSize { get; set; }
+    public int? HqBitRate { get; set; }
+    public int? HqFps { get; set; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
@@ -182,6 +188,20 @@ public static class Store
         foreach (var m in State.Devices.Values) m.Groups ??= [];
         if (string.IsNullOrWhiteSpace(Settings.ScreenshotDir)) Settings.ScreenshotDir = Path.Combine(Path.GetDirectoryName(DataDir) ?? AppContext.BaseDirectory, "screenshots");
         try { Ui = JsonSerializer.Deserialize<UiPrefs>(System.IO.File.ReadAllText(UiFile), Json) ?? new(); } catch { Ui = new(); }
+        // tệp bị sửa tay / bản cũ / giá trị ngoài khoảng: sửa lại thay vì mở luồng với thông số vô lý
+        LoadFixes = SettingsSanitizer.Apply(Settings);
+        LoadFixes.AddRange(SettingsSanitizer.Apply(Ui));
+        foreach (var m in State.Devices.Values) m.Groups ??= [];
+    }
+
+    /// <summary>Các giá trị đã được sửa khi nạp cấu hình (rỗng = tệp hợp lệ).</summary>
+    public static List<string> LoadFixes { get; private set; } = [];
+
+    /// <summary>Như <see cref="Meta"/> nhưng KHÔNG tạo bản ghi mới (dùng trong đường mở luồng, gọi rất thường xuyên).</summary>
+    public static DeviceMeta? MetaOrNull(string? hwId)
+    {
+        if (string.IsNullOrEmpty(hwId)) return null;
+        lock (gate) return State.Devices.TryGetValue(hwId, out var m) ? m : null;
     }
 
     public static DeviceMeta Meta(string hwId)
