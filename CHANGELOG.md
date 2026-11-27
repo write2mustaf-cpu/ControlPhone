@@ -31,7 +31,7 @@ repository — no planned features are listed as done.
   (support links, Sham Cash). All six languages now report **0 missing keys** (`npm run i18n:check`).
 
 ### Verification
-- Self-check grew from 68 to **80** checks, adding: crash text has type/message/stack and hides keys, crash log is
+- Self-check grew from 68 to **85** checks, adding: crash text has type/message/stack and hides keys, crash log is
   written and rotates, long tool output is truncated (head/tail kept), usage adds up and is written to `ai.json`,
   the usage line formatting, and the untrusted-output rule in the system prompt. Runs in CI on Windows with the
   installed copy as well.
