@@ -204,6 +204,13 @@ the operation log, and keeps your device names and numbers.
 - **Navigation bar visible in games on Android 10** — select the phones → right-click → ADB commands → *Hide 3-button bar for the current app*.
 - **No video in the browser** — use a recent Microsoft Edge or Google Chrome (WebCodecs required).
 
+### Reporting a problem
+
+*Links & support → Diagnostics bundle → Export…* writes one ZIP you can attach to an email or send in the Telegram group:
+versions (app, Windows, .NET, ADB, FFmpeg), the phone list (numbers, labels, transport, Android — no serial numbers),
+the operation log, `crash.log` and your settings files. `ai.json` is excluded entirely and every text file is scrubbed of
+`sk-…`, `AIza…`, `Bearer …` and `?key=` tokens before it is written, so the bundle is safe to hand to someone else.
+
 ## ❤️ Support the project
 
 ControlPhone is free and always will be. If it saves you time or money, a donation keeps it maintained and improving. Thank you!

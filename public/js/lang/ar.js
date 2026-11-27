@@ -752,4 +752,10 @@ export default {
   "Đang dừng…": "جارٍ الإيقاف…",
   "Đã dừng theo yêu cầu": "أُوقفت بناءً على طلبك",
   "Dừng thao tác này (các máy còn trong hàng đợi sẽ không chạy)": "إيقاف هذه العملية (الهواتف المتبقية في قائمة الانتظار لن تُنفَّذ)",
+  "Gói chẩn đoán": "حزمة التشخيص",
+  "Tệp ZIP gồm phiên bản, danh sách máy (không có số sê-ri), nhật ký hoạt động, crash.log và cài đặt. Không chứa khoá API — hãy gửi kèm khi báo lỗi.": "ملف ZIP يحوي الإصدارات وقائمة الهواتف (بدون أرقام تسلسلية) وسجل العمليات وcrash.log والإعدادات. لا يحتوي على مفاتيح API إطلاقاً — أرفقه عند الإبلاغ عن مشكلة.",
+  "Xuất gói chẩn đoán…": "تصدير حزمة التشخيص…",
+  "Mở thư mục log": "فتح مجلد السجلات",
+  "Đã lưu gói chẩn đoán: {0}": "تم حفظ حزمة التشخيص: {0}",
+  "Không xuất được gói chẩn đoán: {0}": "تعذّر تصدير حزمة التشخيص: {0}",
 };

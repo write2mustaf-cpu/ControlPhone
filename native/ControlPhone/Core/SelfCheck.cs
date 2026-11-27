@@ -46,6 +46,7 @@ public static class SelfCheck
             SanitizerChecks();
             UpdateChecks();
             BatchChecks();
+            DiagChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -395,6 +396,41 @@ public static class SelfCheck
         Check(DeviceVideo.Thumb(new DeviceMeta { ThumbFps = 500, ThumbMaxSize = 9000 }, st) == new VideoPlan(1920, 600_000, 60), "out-of-range overrides clamped");
         Check(DeviceVideo.HasOverrides(weak) && !DeviceVideo.HasOverrides(new DeviceMeta()) && !DeviceVideo.HasOverrides(null), "override detection");
         Check(!DeviceVideo.HasOverrides(Store.MetaOrNull(null)) && Store.MetaOrNull("missing-device") == null, "meta lookup does not create entries");
+    }
+
+    // ---------------- gói chẩn đoán (ghi tệp thật rồi đọc lại) ----------------
+    static void DiagChecks()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "cp-diag-" + Guid.NewGuid().ToString("N")[..8]);
+        var zip = Path.Combine(dir, "bundle.zip");
+        try
+        {
+            OpLog.Add("selfcheck: khoá giả sk-SELFTESTSECRET1234567890 phải bị che");
+            DiagBundle.Build(zip, ["#1\tMáy A\tusb\tonline\tAndroid 13"], 50);
+            var entries = DiagBundle.Entries(zip);
+            Check(File.Exists(zip) && entries.Length >= 4, "diagnostics bundle written", entries.Length + " entries");
+            Check(entries.Contains("README.txt") && entries.Contains("versions.txt") && entries.Contains("oplog.txt") && entries.Contains("devices.txt"), "bundle has the expected files");
+            Check(!entries.Any(e => e.Contains("ai.json")), "bundle never contains ai.json");
+            Check(!ReadEntry(zip, "oplog.txt").Contains("SELFTESTSECRET"), "secrets are scrubbed from the bundle");
+            var dev = ReadEntry(zip, "devices.txt");
+            Check(dev.Contains("Máy A") && dev.Contains("Android 13"), "device list included");
+            var ver = ReadEntry(zip, "versions.txt");
+            Check(ver.Contains("ControlPhone") && ver.Contains(".NET"), "versions recorded");
+            Check(DiagBundle.DefaultName().StartsWith("ControlPhone-diag-") && DiagBundle.DefaultName().EndsWith(".zip"), "bundle name is safe");
+            DiagBundle.Build(zip, null, 5);
+            Check(File.Exists(zip) && DiagBundle.Entries(zip).Length >= 4, "bundle can be rebuilt over an existing file");
+            Check(ReadEntry(zip, "devices.txt").Contains("no phones connected"), "empty device list explained");
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+    }
+
+    static string ReadEntry(string zip, string name)
+    {
+        using var z = System.IO.Compression.ZipFile.OpenRead(zip);
+        var e = z.GetEntry(name);
+        if (e == null) return "";
+        using var r = new StreamReader(e.Open());
+        return r.ReadToEnd();
     }
 
     // ---------------- dừng thao tác hàng loạt ----------------

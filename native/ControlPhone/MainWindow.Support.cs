@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -30,6 +31,33 @@ public partial class MainWindow
     {
         try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
         catch (Exception e) { Ui.Toast(T("Không mở được liên kết") + ": " + e.Message, "err", 6000); }
+    }
+
+    /// <summary>Danh sách máy cho gói chẩn đoán — số, tên, kiểu kết nối, trạng thái, Android; không có số sê-ri.</summary>
+    IEnumerable<string> DiagDeviceLines() => manager.Devices.Select(d =>
+        $"#{d.Num}\t{d.Label}\t{(d.ActiveAddr?.Contains(':') == true ? "wifi" : "usb")}\t{(d.IsOnline ? "online" : "offline")}\tAndroid {d.Android}");
+
+    void ExportDiag()
+    {
+        var sfd = new Microsoft.Win32.SaveFileDialog
+        {
+            FileName = DiagBundle.DefaultName(),
+            Filter = "ZIP (*.zip)|*.zip",
+            InitialDirectory = Path.GetDirectoryName(Store.DataDir),
+        };
+        if (sfd.ShowDialog() != true) return;
+        try
+        {
+            DiagBundle.Build(sfd.FileName, DiagDeviceLines());
+            OpLog.Add("Đã xuất gói chẩn đoán: " + sfd.FileName);
+            Ui.Toast(T("Đã lưu gói chẩn đoán: {0}", Path.GetFileName(sfd.FileName)), "ok", 7000);
+            try { Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{sfd.FileName}\"") { UseShellExecute = true }); } catch { }
+        }
+        catch (Exception e)
+        {
+            OpLog.Add("Xuất gói chẩn đoán thất bại: " + e.Message, error: true);
+            Ui.Toast(T("Không xuất được gói chẩn đoán: {0}", e.Message), "err", 8000);
+        }
     }
 
     /// <summary>Báo cáo kỹ thuật ngắn để người dùng dán vào email/Telegram khi báo lỗi.</summary>
@@ -109,6 +137,12 @@ public partial class MainWindow
         var all = Ui.Btn("Sao chép tất cả liên kết", "copy", "Btn", (_, _) => CopyText("Tất cả liên kết", SupportInfo.AllLinks()));
         all.Margin = new Thickness(0, 0, 0, 8);
         d.Body.Children.Add(all);
+
+        Card("Gói chẩn đoán", "Tệp ZIP gồm phiên bản, danh sách máy (không có số sê-ri), nhật ký hoạt động, crash.log và cài đặt. Không chứa khoá API — hãy gửi kèm khi báo lỗi.", "zip",
+        [
+            ("Xuất gói chẩn đoán…", "download", ExportDiag),
+            ("Mở thư mục log", "folder", Crash.OpenLogFolder),
+        ]);
 
         Card("Cập nhật", "Kiểm tra bản phát hành mới trên GitHub — ứng dụng không tự tải hay tự cài.", "v" + Updates.Current.ToString(3),
         [

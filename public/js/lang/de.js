@@ -651,4 +651,10 @@ export default {
   "Đang dừng…": "Wird angehalten…",
   "Đã dừng theo yêu cầu": "Auf Wunsch angehalten",
   "Dừng thao tác này (các máy còn trong hàng đợi sẽ không chạy)": "Diesen Vorgang anhalten (Telefone in der Warteschlange werden nicht mehr ausgeführt)",
+  "Gói chẩn đoán": "Diagnosepaket",
+  "Tệp ZIP gồm phiên bản, danh sách máy (không có số sê-ri), nhật ký hoạt động, crash.log và cài đặt. Không chứa khoá API — hãy gửi kèm khi báo lỗi.": "Ein ZIP mit Versionen, Telefonliste (ohne Seriennummern), Vorgangsprotokoll, crash.log und Einstellungen. Enthält niemals API-Schlüssel — bitte zur Fehlermeldung mitschicken.",
+  "Xuất gói chẩn đoán…": "Diagnosepaket exportieren…",
+  "Mở thư mục log": "Protokollordner öffnen",
+  "Đã lưu gói chẩn đoán: {0}": "Diagnosepaket gespeichert: {0}",
+  "Không xuất được gói chẩn đoán: {0}": "Diagnosepaket konnte nicht exportiert werden: {0}",
 };

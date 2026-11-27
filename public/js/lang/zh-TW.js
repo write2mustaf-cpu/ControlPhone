@@ -651,4 +651,10 @@ export default {
   "Đang dừng…": "正在停止…",
   "Đã dừng theo yêu cầu": "已依請求停止",
   "Dừng thao tác này (các máy còn trong hàng đợi sẽ không chạy)": "停止此操作（仍在佇列中的手機會被略過）",
+  "Gói chẩn đoán": "診斷包",
+  "Tệp ZIP gồm phiên bản, danh sách máy (không có số sê-ri), nhật ký hoạt động, crash.log và cài đặt. Không chứa khoá API — hãy gửi kèm khi báo lỗi.": "包含版本資訊、手機清單（不含序號）、操作日誌、crash.log 與設定的 ZIP。絕不含 API 金鑰——回報問題時請附上。",
+  "Xuất gói chẩn đoán…": "匯出診斷包…",
+  "Mở thư mục log": "開啟記錄檔資料夾",
+  "Đã lưu gói chẩn đoán: {0}": "診斷包已儲存：{0}",
+  "Không xuất được gói chẩn đoán: {0}": "無法匯出診斷包：{0}",
 };

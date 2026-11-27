@@ -752,4 +752,10 @@ export default {
   "Đang dừng…": "Stopping…",
   "Đã dừng theo yêu cầu": "Stopped on request",
   "Dừng thao tác này (các máy còn trong hàng đợi sẽ không chạy)": "Stop this operation (phones still in the queue will not run)",
+  "Gói chẩn đoán": "Diagnostics bundle",
+  "Tệp ZIP gồm phiên bản, danh sách máy (không có số sê-ri), nhật ký hoạt động, crash.log và cài đặt. Không chứa khoá API — hãy gửi kèm khi báo lỗi.": "A ZIP with versions, the phone list (no serial numbers), the operation log, crash.log and settings. It never contains API keys — send it with a bug report.",
+  "Xuất gói chẩn đoán…": "Export diagnostics bundle…",
+  "Mở thư mục log": "Open log folder",
+  "Đã lưu gói chẩn đoán: {0}": "Diagnostics bundle saved: {0}",
+  "Không xuất được gói chẩn đoán: {0}": "Could not export the diagnostics bundle: {0}",
 };
