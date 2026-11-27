@@ -71,7 +71,7 @@
 
 ## 6. المساعد الذكي (تنفيذ حقيقي)
 
-المساعد ليس واجهة محادثة منفصلة: إنه متصل بمحركات البرنامج عبر **25 أداة** تنفّذ وظائف حقيقية:
+المساعد ليس واجهة محادثة منفصلة: إنه متصل بمحركات البرنامج عبر **24 أداة** تنفّذ وظائف حقيقية:
 
 - قراءة: `list_devices`، `device_details`، `list_groups`، `get_settings`، `diagnostics`، `read_logs`، `app_guide`.
 - تنظيم وعرض: `select_devices`، `assign_group`، `rename_device`، `stream_control`، `screenshot`، `connect_device`، `scan_lan`.

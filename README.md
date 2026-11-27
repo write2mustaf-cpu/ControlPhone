@@ -31,7 +31,7 @@ FFmpeg decoding, device manager, group sync, recovery, OTG/LAN):
   DeepSeek, Groq, local Ollama, custom URL). Per provider: model, max answer length, temperature, timeout, test
   connection, model list, default flag. **Your own API key**, encrypted with Windows DPAPI for your Windows account,
   never logged, never embedded in the build, never sent anywhere except the provider you choose.
-- **An assistant that actually operates the app** — 25 tools wired to the real functions (devices, details, groups,
+- **An assistant that actually operates the app** — 24 tools wired to the real functions (devices, details, groups,
   selection, stream control, keys, typing, URLs, apps, APK install, file push, ADB shell, Wi-Fi connect, LAN scan,
   screenshots, settings, diagnostics, logs, guide). Sensitive tools ask for approval first and show the target phones.
   It answers in Arabic, English, Vietnamese… and never invents device state.

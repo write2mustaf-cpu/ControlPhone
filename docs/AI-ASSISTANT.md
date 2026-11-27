@@ -53,7 +53,7 @@ The assistant receives:
 - the UI language, so it answers in the same language you write in (Arabic included);
 - a guide to how ControlPhone works (used instead of guessing).
 
-Tools available to the assistant (25):
+Tools available to the assistant (24):
 
 | Tool | What it does | Approval |
 |---|---|---|

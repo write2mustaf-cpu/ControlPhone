@@ -29,7 +29,7 @@ repository — no planned features are listed as done.
   429/5xx, timeouts and cancellation. Keys are redacted from every error message.
 
 ### Built-in assistant that actually operates the app (new)
-- The assistant is wired to the real application through a tool registry (25 tools): list devices, device details,
+- The assistant is wired to the real application through a tool registry (24 tools): list devices, device details,
   groups, assign/rename, selection, stream control (restart/pause/resume/zoom/fit), device keys, typing text, open URL,
   app control, APK install, file push, ADB shell, Wi-Fi connect, LAN scan, screenshots, read/change settings,
   diagnostics, logs, in-app guide, support section, AI settings.
