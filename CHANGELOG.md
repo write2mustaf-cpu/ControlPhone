@@ -17,7 +17,7 @@ repository — no planned features are listed as done.
   has to guess.
 
 ### Verification
-- Self-check 130 → **138** checks: stop cancels the token and is idempotent, a finished task cannot be stopped, status
+- Self-check 130 → **137** checks: stop cancels the token and is idempotent, a finished task cannot be stopped, status
   text switches between running/stopping/done, skipped results are flagged and normal results are not.
 - CI builds, runs the self-check twice (build + installed copy), builds the installer and uploads both assets.
 
