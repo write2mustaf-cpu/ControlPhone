@@ -50,6 +50,7 @@ public static class SelfCheck
             SafeModeChecks();
             DeviceLogChecks();
             StreamChecks();
+            BackupChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -399,6 +400,73 @@ public static class SelfCheck
         Check(DeviceVideo.Thumb(new DeviceMeta { ThumbFps = 500, ThumbMaxSize = 9000 }, st) == new VideoPlan(1920, 600_000, 60), "out-of-range overrides clamped");
         Check(DeviceVideo.HasOverrides(weak) && !DeviceVideo.HasOverrides(new DeviceMeta()) && !DeviceVideo.HasOverrides(null), "override detection");
         Check(!DeviceVideo.HasOverrides(Store.MetaOrNull(null)) && Store.MetaOrNull("missing-device") == null, "meta lookup does not create entries");
+    }
+
+    // ---------------- sao lưu / khôi phục toàn bộ dữ liệu người dùng ----------------
+    static void BackupChecks()
+    {
+        var doc = new UserBackup.Doc
+        {
+            Devices = new()
+            {
+                ["SER1"] = new DeviceMeta { Label = "Máy A", Num = 3, Groups = ["nhóm 1"] },
+                ["192.168.1.9:5555"] = new DeviceMeta { Label = "Máy B", Num = 4 },
+            },
+            Groups = ["nhóm 1", "nhóm 2"],
+            NextNum = 5,
+            Theme = "light",
+            Lang = "ar",
+            TileW = 260,
+            Sort = "num",
+            HideOffline = true,
+            Ai = new AiSettings { MaxToolRounds = 5, Stream = false, ExtraSystemPrompt = "ngắn gọn" },
+        };
+        var chats = new[] { ("chat-1", "{\"Id\":\"chat-1\"}"), ("chat 2", "{\"Id\":\"chat 2\"}") };
+        var bytes = UserBackup.Build(doc, chats);
+        var info = UserBackup.Read(bytes);
+
+        Check(info.Manifest.Devices == 2 && info.Manifest.Groups == 2 && info.Manifest.Chats == 2, "backup manifest counts devices, groups and chats");
+        Check(!info.Manifest.ApiKeys, "backup manifest states that no API key is included");
+        Check(info.Doc.Devices["SER1"].Label == "Máy A" && info.Doc.Devices["SER1"].Num == 3, "device names survive a backup round trip");
+        Check(info.Doc.Devices.ContainsKey("192.168.1.9:5555"), "wifi serial keys survive a backup round trip");
+        Check(info.Doc.Groups.Count == 2 && info.Doc.Groups[1] == "nhóm 2", "groups survive a backup round trip");
+        Check(info.Doc.Theme == "light" && info.Doc.Lang == "ar" && info.Doc.TileW == 260 && info.Doc.HideOffline == true, "ui prefs survive a backup round trip");
+        Check(info.Doc.Ai?.MaxToolRounds == 5 && info.Doc.Ai?.Stream == false, "ai settings survive a backup round trip");
+        Check(info.ChatIds.Count == 2 && UserBackup.ReadChats(bytes).Values.Any(v => v.Contains("chat 2")), "chat history is stored and read back", string.Join(",", info.ChatIds));
+        var raw = System.Text.Encoding.UTF8.GetString(bytes);
+        Check(!raw.Contains("KeyProtected") && !raw.Contains("sk-"), "backup never contains api keys");
+        using (var ms = new MemoryStream(bytes))
+        using (var zip = new System.IO.Compression.ZipArchive(ms, System.IO.Compression.ZipArchiveMode.Read))
+            Check(zip.GetEntry("backup.json") != null && zip.GetEntry("data.json") != null && zip.Entries.Count == 4,
+                "backup zip layout is manifest + data + one entry per chat", zip.Entries.Count + " entries");
+
+        var target = new StoreState { NextNum = 2 };
+        target.Devices["SER1"] = new DeviceMeta { Label = "cũ", Num = 3 };
+        target.Devices["LOCAL"] = new DeviceMeta { Label = "máy mới", Num = 7 };
+        target.Groups.Add("nhóm 1");
+        var (added, newGroups) = UserBackup.MergeInto(target, info.Doc);
+        Check(added == 1 && target.Devices["LOCAL"].Label == "máy mới", "restore adds missing devices and keeps local ones", added + " added");
+        Check(target.Devices["SER1"].Label == "Máy A", "restore replaces the metadata of a matching serial");
+        Check(newGroups == 1 && target.Groups.Count == 2, "restore merges groups without duplicates");
+        Check(target.NextNum == 5, "restore never lowers the next device number");
+        Check(UserBackup.MissingChats(["a", "b"], id => id == "a").SequenceEqual(["b"]), "restore skips conversations that already exist");
+
+        var rejected = false;
+        try { UserBackup.Read(System.Text.Encoding.UTF8.GetBytes("not a zip")); } catch (Exception) { rejected = true; }
+        Check(rejected, "a file that is not a zip is rejected");
+
+        var foreign = false;
+        using (var ms = new MemoryStream())
+        {
+            using (var zip = new System.IO.Compression.ZipArchive(ms, System.IO.Compression.ZipArchiveMode.Create, true))
+            {
+                var e = zip.CreateEntry("backup.json");
+                using var w = new StreamWriter(e.Open());
+                w.Write("{\"App\":\"OtherApp\",\"Version\":1}");
+            }
+            try { UserBackup.Read(ms.ToArray()); } catch (InvalidDataException) { foreign = true; }
+        }
+        Check(foreign, "a backup from another application is rejected");
     }
 
     // ---------------- phát trực tiếp câu trả lời của trợ lý (SSE, không cần mạng) ----------------

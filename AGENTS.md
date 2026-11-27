@@ -13,6 +13,8 @@ Repository notes for AI agents working on ControlPhone (multi-phone Android cont
       corrections are logged to the operation log. **Add new settings here too**, otherwise a hand-edited file wins.
     - `DeviceVideo.cs` — per-phone grid/viewer resolution, fps, bitrate (null override = global). Used by
       `DeviceManager.ThumbOptions/HqOptions`; read metas with `Store.MetaOrNull` (never `Store.Meta` in hot paths).
+    - `UserBackup.cs` — full user-data backup/restore ZIP: `backup.json` manifest + `data.json` (devices/groups/settings/UI
+      prefs/AI settings) + `chats/<id>.json`; never contains API keys; `MergeInto` merges instead of overwriting.
     - `AiStream.cs` — SSE line parser + per-provider `StreamAccumulator` (text deltas, tool-call fragments by index /
       content block, usage); pure, so the self-check feeds it recorded chunks. `AiClient.ChatStreamAsync` returns
       `null` on any stream problem and `AiAgent` then falls back to the non-streamed `ChatAsync`.
@@ -50,7 +52,7 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (196 checks as of 3.8.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (213 checks as of 3.9.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
 ## Gotchas
