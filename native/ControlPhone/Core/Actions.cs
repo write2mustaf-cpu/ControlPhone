@@ -30,6 +30,33 @@ public sealed class BatchTask : INotifyPropertyChanged
     public bool OpenResults { get; init; }
     public List<TaskResult> Results { get; } = [];
     public CancellationToken Token => cts.Token;
+
+    /// <summary>Máy đã bị huỷ riêng (không chạy nữa) trong khi các máy khác vẫn tiếp tục.</summary>
+    readonly HashSet<string> cancelled = [];
+
+    /// <summary>Tham số của thao tác, giữ lại để chạy lại đúng như lần đầu khi thử lại các máy lỗi.</summary>
+    public Dictionary<string, object?> Payload { get; init; } = [];
+
+    /// <summary>Máy nằm trong thao tác này, theo thứ tự đã chọn — dùng để hiện cả các máy đang chờ.</summary>
+    public IReadOnlyList<string> DeviceIds { get; init; } = [];
+
+    /// <summary>Huỷ một máy khỏi thao tác đang chạy; máy khác không bị ảnh hưởng.</summary>
+    public void CancelDevice(string id)
+    {
+        if (Finished) return;
+        lock (cancelled) cancelled.Add(id);
+        Changed();
+    }
+
+    public bool IsCancelled(string id) { lock (cancelled) return cancelled.Contains(id); }
+
+    public int CancelledCount { get { lock (cancelled) return cancelled.Count; } }
+
+    /// <summary>Máy có nên bỏ qua không: đã dừng cả thao tác, hoặc máy này bị huỷ riêng.</summary>
+    public bool ShouldSkip(string id) => StopRequested || IsCancelled(id);
+
+    /// <summary>Các máy thất bại (không tính máy bị bỏ qua) — đầu vào của "thử lại máy lỗi".</summary>
+    public List<string> FailedIds => Results.Where(r => !r.Ok && !r.Skipped).Select(r => r.Id).Distinct().ToList();
     public bool StopRequested { get; private set; }
     public bool CanStop => !Finished && !StopRequested;
 
@@ -228,7 +255,15 @@ public sealed class Actions
         var devices = ids.Select(manager.Get).Where(d => d is { Pending: false, ActiveAddr: not null }).Cast<PhoneDevice>().ToList();
         if (devices.Count == 0) return null;
         p ??= [];
-        var task = new BatchTask { Op = op, Title = title, Total = devices.Count, OpenResults = openResults };
+        var task = new BatchTask
+        {
+            Op = op,
+            Title = title,
+            Total = devices.Count,
+            OpenResults = openResults,
+            Payload = p,
+            DeviceIds = devices.Select(d => d.Id).ToList(),
+        };
         TaskUpdated?.Invoke(task);
         Interlocked.Increment(ref RunningTasks);
         var lim = new SemaphoreSlim(Math.Max(1, Store.Settings.MaxParallelJobs));
@@ -241,7 +276,7 @@ public sealed class Actions
                 bool skipped = false;
                 try
                 {
-                    if (task.Token.IsCancellationRequested) { skipped = true; r = (false, ""); }
+                    if (task.ShouldSkip(d.Id)) { skipped = true; r = (false, ""); }
                     else r = await fn(d, d.ActiveAddr!, p);
                 }
                 catch (Exception e) { r = (false, e.Message); }
@@ -263,6 +298,14 @@ public sealed class Actions
             _ = ui.BeginInvoke(() => { task.Finished = true; task.Changed(); TaskUpdated?.Invoke(task); });
         });
         return task;
+    }
+
+    /// <summary>Chạy lại đúng thao tác đó trên các máy đã lỗi (giữ nguyên tham số), như một thao tác mới.</summary>
+    public BatchTask? Retry(BatchTask task)
+    {
+        var ids = task.FailedIds;
+        if (ids.Count == 0) return null;
+        return RunBatch(task.Op, ids, task.Payload, I18n.T("Thử lại: {0}", task.Title));
     }
 
     // ---------- WiFi / kết nối ----------

@@ -3,6 +3,26 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.11.0 — A running batch can be steered, and failures can be retried
+
+### Per-phone cancel and retry (queue hardening)
+- `BatchTask` now carries `Payload` and `DeviceIds`, and gains `CancelDevice(id)` / `IsCancelled(id)` / `ShouldSkip(id)`:
+  one phone leaves the batch while the rest keep running. `Stop()` still cancels the whole queue, and a finished batch
+  ignores late cancellations.
+- `Actions.Retry(task)` re-runs the same operation with the same arguments on `FailedIds` only — skipped phones are
+  excluded and a phone that failed twice is retried once. It appears as a new task, so the first run's results and log
+  stay intact.
+- Results window: every phone in the batch is listed, waiting phones show *Đang chờ…* with their own ✕ button, then
+  switch to *Đã huỷ* / result; the row updates live from the task's `PropertyChanged`. Buttons: *Dừng tất cả*,
+  *Thử lại N máy lỗi*, *Chọn các máy lỗi*.
+- A `clock` glyph was added for the waiting state.
+
+### Verification
+- Self-check 228 → **237**: fresh batch runs everything, cancelling one phone leaves the others (and does not stop the
+  queue), stop skips what is left, a finished batch ignores late cancels, `FailedIds` excludes skipped results and
+  de-duplicates, a clean batch has nothing to retry, and payload/targets survive for the retry. The seven existing
+  stop/token/status checks were kept.
+
 ## 3.10.0 — Keyboard shortcuts for the grid
 
 ### Shortcuts (12, all working, listed in-app)

@@ -117,12 +117,65 @@ public partial class MainWindow
 
     void ShowTaskResults(BatchTask task)
     {
-        var res = task.Results.OrderBy(r => r.Skipped ? 2 : r.Ok ? 1 : 0).ThenBy(r => r.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
         var d = new Dlg(T("{0} — {1}/{2} thành công", task.Title, task.OkCount, task.Total), 800);
-        if (res.Count == 0) d.AddText("Không có máy nào.");
-        foreach (var r in res) d.Body.Children.Add(ResultRow(r.Ok, r.Name, r.Skipped ? I18n.T("Đã dừng theo yêu cầu") : r.Msg != "" ? I18n.T(r.Msg) : I18n.T(r.Ok ? "OK" : "Lỗi"), r.Skipped));
+        if (task.DeviceIds.Count == 0 && task.Results.Count == 0) d.AddText("Không có máy nào.");
+
+        var rows = new List<(string Id, TextBlock Icon, TextBox Msg, Button? Cancel)>();
+        var ids = task.DeviceIds.Concat(task.Results.Select(r => r.Id)).Distinct().ToList();
+        foreach (var id in ids)
+        {
+            var dev = manager.Get(id);
+            var name = dev != null ? manager.LabelOf(dev) : id;
+            var msg = new TextBox { Text = "", IsReadOnly = true, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Consolas"), FontSize = 11.5, MaxHeight = 160, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+            var g = new Grid { Margin = new Thickness(0, 0, 0, 6) };
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(200) });
+            g.ColumnDefinitions.Add(new ColumnDefinition());
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var ic = Ui.Icon("clock", 13, "Muted");
+            ic.Margin = new Thickness(0, 2, 8, 0);
+            ic.VerticalAlignment = VerticalAlignment.Top;
+            var nm = new TextBlock { Text = name, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 10, 0) };
+            Grid.SetColumn(nm, 1);
+            Grid.SetColumn(msg, 2);
+            var cancel = new Button { Content = Icons.Get("x"), FontSize = 10, Width = 22, Height = 20, MinHeight = 18, Padding = new Thickness(0), ToolTip = T("Huỷ riêng máy này, các máy khác vẫn chạy") };
+            cancel.SetResourceReference(StyleProperty, "IconGhost");
+            cancel.Visibility = Visibility.Collapsed;
+            cancel.Click += (_, e) => { e.Handled = true; task.CancelDevice(id); UpdateTaskRows(); };
+            Grid.SetColumn(cancel, 3);
+            g.Children.Add(ic); g.Children.Add(nm); g.Children.Add(msg); g.Children.Add(cancel);
+            d.Body.Children.Add(g);
+            rows.Add((id, ic, msg, cancel));
+        }
+
+        void UpdateTaskRows()
+        {
+            foreach (var (id, icon, msg, cancel) in rows)
+            {
+                var r = task.Results.FirstOrDefault(x => x.Id == id);
+                if (r == null)
+                {
+                    if (task.IsCancelled(id) || task.StopRequested) { msg.Text = I18n.T("Đã huỷ"); icon.Text = Icons.Get("x"); icon.Opacity = 0.55; }
+                    else { msg.Text = I18n.T(task.Finished ? "Không chạy" : "Đang chờ…"); icon.Text = Icons.Get(task.Finished ? "pause" : "clock"); icon.Opacity = 0.55; }
+                }
+                else
+                {
+                    msg.Text = r.Skipped ? I18n.T("Đã dừng theo yêu cầu") : r.Msg != "" ? I18n.T(r.Msg) : I18n.T(r.Ok ? "OK" : "Lỗi");
+                    icon.Text = Icons.Get(r.Skipped ? "pause" : r.Ok ? "check" : "x");
+                    icon.Opacity = 1;
+                }
+                cancel.Visibility = !task.Finished && r == null && !task.IsCancelled(id) && !task.StopRequested
+                    ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+
+        void OnChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => UpdateTaskRows();
+        task.PropertyChanged += OnChanged;
+        d.Closed += (_, _) => task.PropertyChanged -= OnChanged;
+        UpdateTaskRows();
+
         if (!task.Finished)
-            d.AddAction("Dừng", "Btn", () => { task.Stop(); return false; }, "stop");
+            d.AddAction("Dừng tất cả", "Btn", () => { task.Stop(); UpdateTaskRows(); return false; }, "stop");
         if (task.Op == "screenshot")
             d.AddAction("Mở thư mục ảnh", "Btn", () =>
             {
@@ -131,6 +184,14 @@ public partial class MainWindow
                 return false;
             }, "folder");
         if (task.Fail > 0)
+        {
+            d.AddAction(T("Thử lại {0} máy lỗi", task.Fail), "Primary", () =>
+            {
+                var again = actions.Retry(task);
+                if (again == null) { Ui.Toast(T("Không còn máy lỗi để thử lại"), "ok"); return false; }
+                Ui.Toast(T("Đang thử lại trên {0} máy", again.Total), "ok");
+                return true;
+            }, "refresh");
             d.AddAction("Chọn các máy lỗi", "Btn", () =>
             {
                 selected.Clear();
@@ -138,6 +199,7 @@ public partial class MainWindow
                 RefreshSelection();
                 return true;
             });
+        }
         d.AddAction("Đóng", "Primary");
         d.Show();
     }

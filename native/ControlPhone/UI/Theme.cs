@@ -51,7 +51,7 @@ public static class Icons
         ["wifi"] = "", ["wifioff"] = "", ["usb"] = "", ["scan"] = "", ["key"] = "", ["refresh"] = "",
         ["eraser"] = "", ["tag"] = "", ["plus"] = "", ["plug"] = "", ["hash"] = "", ["shield"] = "",
         ["trash"] = "", ["file"] = "", ["check"] = "", ["copy"] = "", ["zap"] = "", ["stop"] = "",
-        ["maximize"] = "", ["globe"] = "", ["up"] = "", ["mute"] = "", ["warn"] = "", ["keyboard"] = "", ["chat"] = "", ["robot"] = "",
+        ["maximize"] = "", ["globe"] = "", ["up"] = "", ["mute"] = "", ["warn"] = "", ["keyboard"] = "", ["chat"] = "", ["robot"] = "", ["clock"] = "\uE823"
     };
 
     public static string Get(string name) => Map.GetValueOrDefault(name, "");

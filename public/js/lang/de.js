@@ -708,4 +708,13 @@ export default {
   "Hãy chọn ít nhất một máy trước": "Wähle zuerst mindestens ein Telefon",
   "Đang kết nối lại luồng hình của {0} máy": "Videostream von {0} Telefonen wird neu verbunden",
   "Không có máy nào để chụp": "Kein Telefon zum Aufnehmen",
+  "Huỷ riêng máy này, các máy khác vẫn chạy": "Nur dieses Telefon abbrechen, die anderen laufen weiter",
+  "Đã huỷ": "Abgebrochen",
+  "Không chạy": "Nicht ausgeführt",
+  "Đang chờ…": "Wartet…",
+  "Dừng tất cả": "Alle stoppen",
+  "Thử lại {0} máy lỗi": "{0} fehlgeschlagene Telefone wiederholen",
+  "Không còn máy lỗi để thử lại": "Keine fehlgeschlagenen Telefone mehr",
+  "Đang thử lại trên {0} máy": "Wiederholung auf {0} Telefonen",
+  "Thử lại: {0}": "Wiederholen: {0}",
 };

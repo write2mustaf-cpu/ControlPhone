@@ -210,6 +210,16 @@ the operation log, and keeps your device names and numbers.
 - **Navigation bar visible in games on Android 10** — select the phones → right-click → ADB commands → *Hide 3-button bar for the current app*.
 - **No video in the browser** — use a recent Microsoft Edge or Google Chrome (WebCodecs required).
 
+### Controlling a running batch
+
+A batch (install, shell, push, screenshot…) no longer has to be all-or-nothing. Its results window lists **every** phone
+in the batch, including the ones still waiting, and each waiting phone has its own ✕ button: cancel that phone and the
+others keep running. "Stop all" still exists for the whole queue.
+
+When the batch ends, **Retry N failed phones** runs the same operation again with the same arguments on exactly the phones
+that failed — skipped phones are not included, and a phone that failed twice is retried once. The retry appears as a new
+task with its own results, so the first run's log stays intact.
+
 ### Keyboard shortcuts
 
 | Keys | Action |
