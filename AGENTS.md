@@ -66,6 +66,14 @@ npm run i18n:check                  # key coverage per language
 - `--selfcheck` is the regression suite (275 checks as of 3.14.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
+## Packaging
+- `tools/package_manifests.py` — generates winget (3 YAML) + Scoop (1 JSON) + `manifests.json` from the real release
+  files; computes SHA256, refuses renamed/missing artefacts, re-reads what it wrote. CI runs it after the installer step
+  and attaches `ControlPhone-v<ver>-manifests.zip` to the release.
+- Scoop bucket repo: `write2mustaf-cpu/scoop-controlphone` (`bucket/controlphone.json`). Keep `persist: "data"` — the app
+  stores config, device logs and API keys in `<app>\data`.
+- CI cannot run `winget validate` or `scoop install` (neither exists on the runner) — state that instead of implying it.
+
 ## Gotchas
 
 - Git pushes from this environment are read-only for `write2mustaf-cpu/ControlPhone` (integration token, 403);
