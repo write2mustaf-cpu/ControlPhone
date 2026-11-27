@@ -10,12 +10,13 @@ using ControlPhone.Adb;
 
 namespace ControlPhone.Core;
 
-public sealed record TaskResult(string Id, int Vid, string Name, bool Ok, string Msg);
+public sealed record TaskResult(string Id, int Vid, string Name, bool Ok, string Msg, bool Skipped = false);
 
 /// <summary>Một thao tác hàng loạt (hiện ở bảng tiến trình).</summary>
 public sealed class BatchTask : INotifyPropertyChanged
 {
     static int seq;
+    readonly CancellationTokenSource cts = new();
     public int Id { get; } = Interlocked.Increment(ref seq);
     public string Op { get; init; } = "";
     public string Title { get; init; } = "";
@@ -23,11 +24,28 @@ public sealed class BatchTask : INotifyPropertyChanged
     public int Done { get; internal set; }
     public int OkCount { get; internal set; }
     public int Fail { get; internal set; }
+    /// <summary>Máy chưa kịp chạy vì người dùng bấm dừng.</summary>
+    public int Skipped { get; internal set; }
     public bool Finished { get; internal set; }
     public bool OpenResults { get; init; }
     public List<TaskResult> Results { get; } = [];
+    public CancellationToken Token => cts.Token;
+    public bool StopRequested { get; private set; }
+    public bool CanStop => !Finished && !StopRequested;
+
+    /// <summary>Dừng thao tác: các máy còn trong hàng đợi bị bỏ qua, máy đang chạy hoàn tất lệnh hiện tại.</summary>
+    public void Stop()
+    {
+        if (!CanStop) return;
+        StopRequested = true;
+        try { cts.Cancel(); } catch (ObjectDisposedException) { }
+        Changed();
+    }
+
     public double Progress => Total == 0 ? 100 : Done * 100.0 / Total;
-    public string StatusText => Finished ? I18n.T("Xong · bấm để xem") : I18n.T("Đang chạy…");
+    public string StatusText => Finished
+        ? I18n.T("Xong · bấm để xem")
+        : StopRequested ? I18n.T("Đang dừng…") : I18n.T("Đang chạy…");
     public event PropertyChangedEventHandler? PropertyChanged;
     internal void Changed() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
 }
@@ -220,14 +238,21 @@ public sealed class Actions
             {
                 await lim.WaitAsync();
                 (bool Ok, string Msg) r;
-                try { r = await fn(d, d.ActiveAddr!, p); }
+                bool skipped = false;
+                try
+                {
+                    if (task.Token.IsCancellationRequested) { skipped = true; r = (false, ""); }
+                    else r = await fn(d, d.ActiveAddr!, p);
+                }
                 catch (Exception e) { r = (false, e.Message); }
                 finally { lim.Release(); }
                 _ = ui.BeginInvoke(() =>
                 {
                     task.Done++;
-                    if (r.Ok) task.OkCount++; else task.Fail++;
-                    task.Results.Add(new TaskResult(d.Id, d.Vid, manager.LabelOf(d), r.Ok, r.Msg.Length > 4000 ? r.Msg[..4000] : r.Msg));
+                    if (skipped) task.Skipped++;
+                    else if (r.Ok) task.OkCount++; else task.Fail++;
+                    task.Results.Add(new TaskResult(d.Id, d.Vid, manager.LabelOf(d), r.Ok,
+                        skipped ? "" : r.Msg.Length > 4000 ? r.Msg[..4000] : r.Msg, skipped));
                     task.Changed();
                     TaskUpdated?.Invoke(task);
                 });

@@ -749,4 +749,7 @@ export default {
   "Kiểm tra bản phát hành mới trên GitHub — ứng dụng không tự tải hay tự cài.": "Check GitHub for a newer release — the app never downloads or installs anything by itself.",
   "Kiểm tra ngay": "Check now",
   "Tự kiểm tra cập nhật khi khởi động (tối đa 1 lần/24 giờ)": "Check for updates at startup (at most once per 24 hours)",
+  "Đang dừng…": "Stopping…",
+  "Đã dừng theo yêu cầu": "Stopped on request",
+  "Dừng thao tác này (các máy còn trong hàng đợi sẽ không chạy)": "Stop this operation (phones still in the queue will not run)",
 };

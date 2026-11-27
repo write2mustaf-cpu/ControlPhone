@@ -660,13 +660,13 @@ public partial class MainWindow
         d.ShowDialog();
     }
 
-    static FrameworkElement ResultRow(bool ok, string name, string msg)
+    static FrameworkElement ResultRow(bool ok, string name, string msg, bool skipped = false)
     {
         var g = new Grid { Margin = new Thickness(0, 0, 0, 6) };
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(200) });
         g.ColumnDefinitions.Add(new ColumnDefinition());
-        var ic = Ui.Icon(ok ? "check" : "x", 13, ok ? "Ok" : "Bad"); ic.Margin = new Thickness(0, 2, 8, 0); ic.VerticalAlignment = VerticalAlignment.Top;
+        var ic = Ui.Icon(skipped ? "pause" : ok ? "check" : "x", 13, skipped ? "Muted" : ok ? "Ok" : "Bad"); ic.Margin = new Thickness(0, 2, 8, 0); ic.VerticalAlignment = VerticalAlignment.Top;
         var nm = new TextBlock { Text = name, FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 10, 0) };
         var m = new TextBox { Text = msg, IsReadOnly = true, TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("Consolas"), FontSize = 11.5, MaxHeight = 160, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
         Grid.SetColumn(nm, 1); Grid.SetColumn(m, 2);

@@ -648,4 +648,7 @@ export default {
   "Kiểm tra bản phát hành mới trên GitHub — ứng dụng không tự tải hay tự cài.": "在 GitHub 上检查是否有更新版本——应用不会自行下载或安装任何内容。",
   "Kiểm tra ngay": "立即检查",
   "Tự kiểm tra cập nhật khi khởi động (tối đa 1 lần/24 giờ)": "启动时检查更新（最多每 24 小时一次）",
+  "Đang dừng…": "正在停止…",
+  "Đã dừng theo yêu cầu": "已按请求停止",
+  "Dừng thao tác này (các máy còn trong hàng đợi sẽ không chạy)": "停止此操作（仍在队列中的手机会被跳过）",
 };

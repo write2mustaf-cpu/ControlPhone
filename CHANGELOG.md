@@ -3,6 +3,24 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.4.0 — Stop a running batch operation
+
+### Stop button for every batch (new)
+- Every batch (install APK, push file, shell, screenshot, battery, Wi-Fi switch, reboot…) now shows a ⏹ button on its
+  progress card, and the results window gets a *Stop* button while the task is running.
+- Stopping is **queue-level and per-task**: phones that have not started yet are skipped and reported as *stopped*
+  (`⏸`), the phone currently being worked on finishes its current command, and other tasks are untouched.
+- Three counts are kept apart — ✓ done, ✗ failed, ⏸ stopped — in the card, in the results window and in the operation
+  log line (`push: 12/40 ok, 1 failed, 27 stopped`). *Select the failed phones* ignores stopped phones, so a stopped
+  batch cannot be mistaken for a broken one.
+- `BatchTask.Stop()` is idempotent and safe after the task finished; `TaskResult` carries a `Skipped` flag so the UI never
+  has to guess.
+
+### Verification
+- Self-check 130 → **137** checks: stop cancels the token and is idempotent, a finished task cannot be stopped, status
+  text switches between running/stopping/done, skipped results are flagged and normal results are not.
+- CI builds, runs the self-check twice (build + installed copy), builds the installer and uploads both assets.
+
 ## 3.3.0 — Update check, and repo notes for future work
 
 ### Update check (new)

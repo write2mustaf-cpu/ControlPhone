@@ -45,6 +45,7 @@ public static class SelfCheck
             RobustnessChecks();
             SanitizerChecks();
             UpdateChecks();
+            BatchChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -394,6 +395,26 @@ public static class SelfCheck
         Check(DeviceVideo.Thumb(new DeviceMeta { ThumbFps = 500, ThumbMaxSize = 9000 }, st) == new VideoPlan(1920, 600_000, 60), "out-of-range overrides clamped");
         Check(DeviceVideo.HasOverrides(weak) && !DeviceVideo.HasOverrides(new DeviceMeta()) && !DeviceVideo.HasOverrides(null), "override detection");
         Check(!DeviceVideo.HasOverrides(Store.MetaOrNull(null)) && Store.MetaOrNull("missing-device") == null, "meta lookup does not create entries");
+    }
+
+    // ---------------- dừng thao tác hàng loạt ----------------
+    static void BatchChecks()
+    {
+        var t = new BatchTask { Op = "test", Title = "kiểm tra", Total = 3 };
+        Check(t.CanStop && !t.Token.IsCancellationRequested && t.Skipped == 0, "batch can be stopped while running");
+        t.Stop();
+        Check(!t.CanStop && t.Token.IsCancellationRequested, "stop cancels the queue");
+        Check(t.StatusText == I18n.T("Đang dừng…"), "stopping task says so", t.StatusText);
+        t.Stop();
+        Check(!t.CanStop, "stop is idempotent");
+        t.Finished = true;
+        Check(!t.CanStop && t.StatusText == I18n.T("Xong · bấm để xem"), "finished task reports done", t.StatusText);
+
+        var done = new BatchTask { Op = "test", Title = "xong", Total = 1, Finished = true };
+        Check(!done.CanStop && done.Token.IsCancellationRequested == false, "finished task cannot be stopped");
+
+        var skipped = new TaskResult("abc", 1, "máy", false, "", Skipped: true);
+        Check(skipped.Skipped && !new TaskResult("abc", 1, "máy", true, "ok").Skipped, "skipped results are flagged");
     }
 
     // ---------------- kiểm tra bản cập nhật (phân tích thuần, không cần mạng) ----------------

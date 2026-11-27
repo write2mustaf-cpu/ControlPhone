@@ -648,4 +648,7 @@ export default {
   "Kiểm tra bản phát hành mới trên GitHub — ứng dụng không tự tải hay tự cài.": "Auf GitHub nach einer neueren Version suchen — die App lädt oder installiert nichts selbst.",
   "Kiểm tra ngay": "Jetzt prüfen",
   "Tự kiểm tra cập nhật khi khởi động (tối đa 1 lần/24 giờ)": "Beim Start nach Updates suchen (höchstens einmal pro 24 Stunden)",
+  "Đang dừng…": "Wird angehalten…",
+  "Đã dừng theo yêu cầu": "Auf Wunsch angehalten",
+  "Dừng thao tác này (các máy còn trong hàng đợi sẽ không chạy)": "Diesen Vorgang anhalten (Telefone in der Warteschlange werden nicht mehr ausgeführt)",
 };
