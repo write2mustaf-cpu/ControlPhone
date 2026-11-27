@@ -714,4 +714,12 @@ export default {
   "Tệp cài đặt không hợp lệ: ": "ملف الإعدادات غير صالح: ",
   "Không ghi được tệp: ": "تعذّرت كتابة الملف: ",
   "Đã đổi ngôn ngữ — ControlPhone sẽ khởi động lại": "تم تغيير اللغة — سيعاد تشغيل ControlPhone",
+  "ControlPhone gặp lỗi không mong muốn": "حدث خطأ غير متوقع في ControlPhone",
+  "Ứng dụng vẫn tiếp tục chạy. Chi tiết đã được ghi vào tệp nhật ký lỗi.": "يستمر التطبيق في العمل. تم تسجيل التفاصيل في ملف سجل الأخطاء.",
+  "Mở thư mục nhật ký?": "هل تريد فتح مجلد السجلات؟",
+  "yêu cầu": "طلب",
+  "Báo lỗi kỹ thuật": "تقرير فني",
+  "Khi cần hỗ trợ, gửi kèm thông tin chẩn đoán và tệp nhật ký lỗi — chúng không chứa khoá API.": "عند طلب الدعم، أرسل معلومات التشخيص وملف سجل الأخطاء — لا تحتوي على مفاتيح API.",
+  "Mở thư mục nhật ký": "فتح مجلد السجلات",
+  "Sao chép thông tin chẩn đoán": "نسخ معلومات التشخيص",
 };

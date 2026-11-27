@@ -542,6 +542,20 @@ public sealed class AiChatWindow : Window
             case AiEventKind.Stopped:
                 status.Text = I18n.T("Đã dừng");
                 break;
+            case AiEventKind.Usage:
+            {
+                var line = new TextBlock
+                {
+                    Text = e.Text,
+                    FontSize = 11,
+                    Margin = new Thickness(4, 0, 4, 8),
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                };
+                line.SetResourceReference(TextBlock.ForegroundProperty, "Muted");
+                messages.Children.Add(line);
+                ScrollToEnd();
+                break;
+            }
         }
     }
 

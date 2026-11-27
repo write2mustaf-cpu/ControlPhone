@@ -46,7 +46,7 @@ The folder layout after extraction:
 ControlPhone.exe            the application
 data\                       your phone numbers, names, groups, settings (created on first run)
 data\ai\ai.json             AI providers; API keys encrypted with Windows DPAPI
-data\logs\                  operation logs
+data\logs\                  operation logs and crash.log (unexpected errors)
 lang\*.js                   UI translations (vi, en, ar, zh-CN, zh-TW, de, fr)
 scrcpy\                     adb.exe, scrcpy-server, FFmpeg DLLs, scrcpy.exe
 docs\                       this documentation
@@ -100,6 +100,8 @@ control.
 | Wi-Fi phone keeps disconnecting | Enable *Auto-reconnect Wi-Fi phones*; keep the phone on the same network. |
 | Very low FPS with many phones | Lower grid quality, use *Show only these phones*, or enable *Focus viewer*. |
 | Antivirus blocks the exe | The binary is unsigned; allow it or build it yourself (see `native/README.md`). |
+| "ControlPhone hit an unexpected error" dialog | The app kept running. The full details are in `data\logs\crash.log` (older errors rotate to `crash.log.1`); the dialog can open that folder. API keys are removed before writing. |
+| App closes without any message | Start it from a console (`ControlPhone.exe`) to see the output, and send `data\logs\crash.log` plus the newest file in `data\logs` with your report. |
 
 ## Verifying a build
 

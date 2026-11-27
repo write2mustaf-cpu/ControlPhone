@@ -99,6 +99,7 @@ public static class AiProvidersDialog
                 {
                     Text = $"{AiPresets.KindLabel(p.Kind)} · {p.Model} · {(p.HasKey ? I18n.T("Đã lưu khoá (mã hoá)") : I18n.T("Chưa có khoá"))}" +
                            $"{(p.LastOk != null ? " · " + I18n.T("Lần thành công cuối") + " " + p.LastOk.Value.ToString("dd/MM HH:mm") : "")}" +
+                           (p.Requests > 0 ? $" · {p.Requests:N0} " + I18n.T("yêu cầu") + $" · {p.TokensTotal:N0} token" : "") +
                            (string.IsNullOrEmpty(p.LastError) ? "" : " · " + I18n.T("Lỗi cuối") + ": " + p.LastError),
                     FontSize = 11.5,
                     TextWrapping = TextWrapping.Wrap,

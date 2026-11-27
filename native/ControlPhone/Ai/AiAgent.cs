@@ -2,7 +2,7 @@ using System.Text;
 
 namespace ControlPhone.Ai;
 
-public enum AiEventKind { Status, AssistantText, ToolStart, ToolEnd, Error, Stopped }
+public enum AiEventKind { Status, AssistantText, ToolStart, ToolEnd, Error, Stopped, Usage }
 
 public sealed record AiEvent(AiEventKind Kind, string Text, AiToolCall? Call = null, AiToolResult? Result = null, bool? Ok = null);
 
@@ -12,6 +12,9 @@ public sealed record AiEvent(AiEventKind Kind, string Text, AiToolCall? Call = n
 /// </summary>
 public sealed class AiAgent(AiToolHost tools)
 {
+    /// <summary>Kết quả công cụ dài hơn mức này bị rút gọn trước khi gửi lại cho AI (tránh tràn ngữ cảnh và hoá đơn token).</summary>
+    public const int MaxToolChars = 8000;
+
     public event Action<AiEvent>? Event;
     /// <summary>Hỏi người dùng trước khi chạy công cụ nhạy cảm. Trả về false = từ chối.</summary>
     public Func<AiToolSpec, string, Task<bool>>? Approve;
@@ -35,6 +38,8 @@ public sealed class AiAgent(AiToolHost tools)
         var specs = tools.Specs;
         var settings = AiStore.Settings;
         var rounds = Math.Clamp(settings.MaxToolRounds, 1, 20);
+        var usage = new AiUsage(0, 0);
+        var clock = System.Diagnostics.Stopwatch.StartNew();
 
         for (int round = 0; round < rounds; round++)
         {
@@ -43,6 +48,7 @@ public sealed class AiAgent(AiToolHost tools)
 
             var history = BuildHistory(chat, provider);
             var reply = await AiClient.ChatAsync(provider, apiKey, history, specs, ct).ConfigureAwait(false);
+            usage += reply.Usage;
 
             if (!reply.Ok)
             {
@@ -64,6 +70,7 @@ public sealed class AiAgent(AiToolHost tools)
             if (reply.ToolCalls.Count == 0)
             {
                 if (string.IsNullOrEmpty(reply.Text)) Emit(new AiEvent(AiEventKind.AssistantText, "(no answer)"));
+                Finish(provider, usage, clock);
                 return;
             }
 
@@ -97,6 +104,35 @@ public sealed class AiAgent(AiToolHost tools)
         var note = new AiMessage { Role = "assistant", Content = "Stopped after the maximum number of tool rounds. Tell the user what was done and what is left.", Error = false };
         chat.Messages.Add(note);
         Emit(new AiEvent(AiEventKind.AssistantText, note.Content));
+        Finish(provider, usage, clock);
+    }
+
+    /// <summary>Ghi thống kê sử dụng (nếu nhà cung cấp báo) và thông báo cho khung chat.</summary>
+    void Finish(AiProvider provider, AiUsage usage, System.Diagnostics.Stopwatch clock)
+    {
+        clock.Stop();
+        if (usage.Any) AiStore.AddUsage(provider.Id, usage);
+        Emit(new AiEvent(AiEventKind.Usage, UsageText(usage, clock.Elapsed)));
+    }
+
+    public static string UsageText(AiUsage usage, TimeSpan took)
+    {
+        var secs = took.TotalSeconds < 10 ? took.TotalSeconds.ToString("0.0") : Math.Round(took.TotalSeconds).ToString("0");
+        var t = $"{secs} s";
+        if (!usage.Any) return t;
+        return $"{usage.Total:N0} tokens ({usage.InputTokens:N0} in / {usage.OutputTokens:N0} out) · {t}";
+    }
+
+    /// <summary>
+    /// Rút gọn kết quả công cụ dài (log, dump, danh sách lớn): giữ phần đầu, phần cuối và số ký tự đã bỏ,
+    /// để mô hình vẫn thấy dữ liệu thật mà không làm tràn ngữ cảnh.
+    /// </summary>
+    public static string TruncateForModel(string text)
+    {
+        if (string.IsNullOrEmpty(text) || text.Length <= MaxToolChars) return text ?? "";
+        const int head = 6000, tail = 1500;
+        var skipped = text.Length - head - tail;
+        return text[..head] + $"\n\n[... {skipped:N0} characters omitted to fit the model context ...]\n\n" + text[^tail..];
     }
 
     static AiMessage ToolMessage(AiToolCall call, AiToolResult result) => new()
@@ -104,7 +140,7 @@ public sealed class AiAgent(AiToolHost tools)
         Role = "tool",
         ToolCallId = call.Id,
         ToolName = call.Name,
-        Content = result.Content,
+        Content = TruncateForModel(result.Content),
         ToolOk = result.Ok,
         ToolSummary = result.Summary,
     };

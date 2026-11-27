@@ -714,4 +714,12 @@ export default {
   "Tệp cài đặt không hợp lệ: ": "Invalid settings file: ",
   "Không ghi được tệp: ": "Could not write the file: ",
   "Đã đổi ngôn ngữ — ControlPhone sẽ khởi động lại": "Language changed — ControlPhone will restart",
+  "ControlPhone gặp lỗi không mong muốn": "ControlPhone hit an unexpected error",
+  "Ứng dụng vẫn tiếp tục chạy. Chi tiết đã được ghi vào tệp nhật ký lỗi.": "The application keeps running. Details were written to the error log file.",
+  "Mở thư mục nhật ký?": "Open the log folder?",
+  "yêu cầu": "requests",
+  "Báo lỗi kỹ thuật": "Technical report",
+  "Khi cần hỗ trợ, gửi kèm thông tin chẩn đoán và tệp nhật ký lỗi — chúng không chứa khoá API.": "When you ask for support, send the diagnostics and the error log file — they contain no API keys.",
+  "Mở thư mục nhật ký": "Open log folder",
+  "Sao chép thông tin chẩn đoán": "Copy diagnostics",
 };

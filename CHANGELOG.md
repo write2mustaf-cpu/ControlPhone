@@ -3,6 +3,39 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.1.0 — Stability, error reporting and assistant hardening
+
+### Crash handling and support reports (new)
+- Every unexpected error is now caught (UI thread, background threads, unobserved tasks), written to
+  `data\logs\crash.log` with type, message, stack, app version, Windows and .NET version, and also recorded in the
+  operation log. The file rotates at 512 KB (`crash.log.1`), so it can never grow without limit.
+- API keys (`sk-…`, `AIza…`, `?key=…`, `Bearer …`) are removed from the text before it is written — the log can be
+  sent to support as-is.
+- A UI-thread error no longer closes the session: the dialog explains what happened, offers to open the log folder and
+  the app keeps controlling the phones.
+- New *Technical report* card in **Links & support**: opens the log folder and copies a ready-made report
+  (version, Windows/.NET, data folder, ADB diagnostics, last 40 operations, keys redacted).
+
+### Assistant hardening
+- Tool output is declared untrusted in the system prompt (rule 11): text from a phone screen, a shell result, a log or
+  a file can never act as a new instruction, which closes the prompt-injection path through device content.
+- Long tool results are trimmed before they are sent back to the model (first 6,000 + last 1,500 characters, with the
+  omitted length stated), so a single `dumpsys` cannot blow the context window or the bill.
+- Token usage and turn duration are shown under every answer (`1,284 tokens (1,020 in / 264 out) · 4.2 s`), and the
+  provider card accumulates requests/tokens per provider from the provider's own counters (`data/ai/ai.json`).
+
+### Fixes
+- The *Links & support* card titles and descriptions were not translated (they were shown in Vietnamese in every
+  language). They now go through the translation layer.
+- Translation gaps closed: German, French, Simplified and Traditional Chinese were each missing 5 strings
+  (support links, Sham Cash). All six languages now report **0 missing keys** (`npm run i18n:check`).
+
+### Verification
+- Self-check grew from 68 to **85** checks, adding: crash text has type/message/stack and hides keys, crash log is
+  written and rotates, long tool output is truncated (head/tail kept), usage adds up and is written to `ai.json`,
+  the usage line formatting, and the untrusted-output rule in the system prompt. Runs in CI on Windows with the
+  installed copy as well.
+
 ## 3.0.1 — Windows installer
 
 ### Installer (new)
