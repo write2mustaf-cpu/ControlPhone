@@ -190,6 +190,12 @@ higher viewer resolution of their own, instead of raising the global level for a
 
 ## ❓ Troubleshooting
 
+**The app closes while starting up?** ControlPhone 3.6+ notices when a start does not finish (twice in a row) and comes
+up in **safe mode**: lightest video profile (240p/5 fps in the grid, 640p/10 fps in the large view), per-phone overrides
+ignored, hardware encoders not preferred. Nothing is written to your settings, and closing and reopening the app returns
+to normal — so a graphics driver problem can no longer lock you out of the window.
+
+
 A corrupted or hand-edited `config.json` no longer breaks the app: ControlPhone 3.2+ clamps every value back into its
 valid range on load (fps, resolution, bitrate, parallel limits, LAN ports, theme, sort, language), logs what it fixed in
 the operation log, and keeps your device names and numbers.

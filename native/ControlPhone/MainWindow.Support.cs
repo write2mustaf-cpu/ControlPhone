@@ -77,6 +77,8 @@ public partial class MainWindow
     {
         var d = new Dlg("Liên hệ & hỗ trợ", 700);
         d.AddText("Nếu cần hỗ trợ, gặp lỗi hoặc muốn theo dõi bản cập nhật — hãy liên hệ qua một trong các kênh dưới đây. Mọi liên kết mở được trực tiếp từ trong ứng dụng.");
+        if (SafeMode.Active)
+            d.AddNote(T("Chế độ an toàn đang bật: hình ảnh nhẹ và không ưu tiên giải mã phần cứng, vì {0} lần khởi động trước không hoàn tất. Đóng ứng dụng rồi mở lại là trở về bình thường.", SafeMode.TriggerFails));
         d.AddNote("Mã Sham Cash chỉ dành cho việc hỗ trợ: người dùng sao chép khi cần; ứng dụng không thực hiện chuyển tiền và không hỏi bất kỳ dữ liệu thanh toán nào.");
 
         void Card(string title, string subtitle, string value, (string Label, string Icon, Action Run)[] actions)

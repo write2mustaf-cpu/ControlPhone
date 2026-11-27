@@ -657,4 +657,6 @@ export default {
   "Mở thư mục log": "Ouvrir le dossier des journaux",
   "Đã lưu gói chẩn đoán: {0}": "Paquet de diagnostic enregistré : {0}",
   "Không xuất được gói chẩn đoán: {0}": "Impossible d'exporter le paquet de diagnostic : {0}",
+  "Đang chạy ở chế độ an toàn: hình ảnh nhẹ, không ưu tiên giải mã phần cứng. Cài đặt của bạn không bị thay đổi.": "Mode sans échec actif : profil vidéo léger, sans préférence de décodage matériel. Vos réglages restent inchangés.",
+  "Chế độ an toàn đang bật: hình ảnh nhẹ và không ưu tiên giải mã phần cứng, vì {0} lần khởi động trước không hoàn tất. Đóng ứng dụng rồi mở lại là trở về bình thường.": "Mode sans échec activé : vidéo légère et pas de préférence matérielle, car {0} démarrage(s) précédent(s) ne se sont pas terminés. Fermez puis rouvrez l'application pour revenir à la normale.",
 };

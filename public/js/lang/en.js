@@ -758,4 +758,6 @@ export default {
   "Mở thư mục log": "Open log folder",
   "Đã lưu gói chẩn đoán: {0}": "Diagnostics bundle saved: {0}",
   "Không xuất được gói chẩn đoán: {0}": "Could not export the diagnostics bundle: {0}",
+  "Đang chạy ở chế độ an toàn: hình ảnh nhẹ, không ưu tiên giải mã phần cứng. Cài đặt của bạn không bị thay đổi.": "Running in safe mode: light video profile, no hardware-decoder preference. Your settings are unchanged.",
+  "Chế độ an toàn đang bật: hình ảnh nhẹ và không ưu tiên giải mã phần cứng, vì {0} lần khởi động trước không hoàn tất. Đóng ứng dụng rồi mở lại là trở về bình thường.": "Safe mode is on: light video and no hardware-decoder preference, because {0} previous start(s) did not finish. Close and reopen the app to return to normal.",
 };

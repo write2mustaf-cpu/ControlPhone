@@ -819,7 +819,7 @@ public sealed class DeviceManager : IDisposable
             // khi máy khởi động lại API đó chưa sẵn sàng → server chết (NullPointerException) → máy vừa reboot không vào được.
             // Giữ máy thức bằng lệnh settings thường (EnsureStayOn) thay thế.
             MaxSize = plan.MaxSize, BitRate = plan.BitRate, MaxFps = plan.MaxFps, PowerOn = s.PowerOnConnect,
-            StayAwake = false, Video = ThumbWantsVideo(d), Encoder = GridEncoder(d), PreferHardware = PreferHw(d), CodecOptions = !d.NoCodecOptions,
+            StayAwake = false, Video = ThumbWantsVideo(d), Encoder = GridEncoder(d), PreferHardware = PreferHw(d) && !SafeMode.Active, CodecOptions = !d.NoCodecOptions,
         };
     }
 
@@ -827,7 +827,7 @@ public sealed class DeviceManager : IDisposable
     {
         var s = Store.Settings;
         var plan = DeviceVideo.Hq(Store.MetaOrNull(d.Id), s);
-        return new ScrcpyOptions { MaxSize = plan.MaxSize, BitRate = plan.BitRate, MaxFps = plan.MaxFps, PowerOn = s.PowerOnConnect, PreferHardware = !d.NoSwEncoder, CodecOptions = !d.NoCodecOptions };
+        return new ScrcpyOptions { MaxSize = plan.MaxSize, BitRate = plan.BitRate, MaxFps = plan.MaxFps, PowerOn = s.PowerOnConnect, PreferHardware = !d.NoSwEncoder && !SafeMode.Active, CodecOptions = !d.NoCodecOptions };
     }
 
     void EnsureThumb(PhoneDevice d)

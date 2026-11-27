@@ -758,4 +758,6 @@ export default {
   "Mở thư mục log": "فتح مجلد السجلات",
   "Đã lưu gói chẩn đoán: {0}": "تم حفظ حزمة التشخيص: {0}",
   "Không xuất được gói chẩn đoán: {0}": "تعذّر تصدير حزمة التشخيص: {0}",
+  "Đang chạy ở chế độ an toàn: hình ảnh nhẹ, không ưu tiên giải mã phần cứng. Cài đặt của bạn không bị thay đổi.": "يعمل التطبيق في الوضع الآمن: ملف فيديو خفيف ودون تفضيل فك الترميز العتادي. إعداداتك لم تتغير.",
+  "Chế độ an toàn đang bật: hình ảnh nhẹ và không ưu tiên giải mã phần cứng, vì {0} lần khởi động trước không hoàn tất. Đóng ứng dụng rồi mở lại là trở về bình thường.": "الوضع الآمن مُفعَّل: فيديو خفيف ودون تفضيل فك الترميز العتادي، لأن {0} من مرات التشغيل السابقة لم تكتمل. أغلق التطبيق وأعد فتحه للعودة إلى الوضع الطبيعي.",
 };

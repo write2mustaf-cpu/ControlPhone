@@ -3,6 +3,26 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.6.0 — Safe mode when startup keeps failing
+
+### Safe mode (new)
+- The app now records each start and each "window is up" moment in `data/logs/session.json`. If a start never becomes
+  ready — the classic driver/codec crash while the first frames are decoded — the counter goes up, and **two in a row put
+  the session in safe mode**.
+- Safe mode is deliberately boring: grid stream capped at 240p / 5 fps / 300 kbps, viewer at 640p / 10 fps / 1 Mbps,
+  per-phone overrides ignored, hardware encoders not preferred. It never makes a light profile heavier (caps are one-way).
+- **Nothing is written to your settings**: the profile is applied when the scrcpy options are built, so `config.json`
+  keeps your values and the next normal start is exactly as before. A toast and a note in *Links & support* say what is
+  happening and how to leave it (close and reopen).
+- A graceful exit marks the session ready, so a normal close never leaves the counter set; a missing/corrupt
+  `session.json` is treated as a first run instead of an error.
+
+### Verification
+- Self-check 146 → **164** checks: counter rules (first run, graceful last run, unfinished last run, growing counter),
+  threshold behaviour, a real `session.json` round-trip in a temp folder (begin ×4 → ready → begin resets → clean), and the
+  video-profile rules (caps applied, override ignored, never heavier, restored after leaving safe mode).
+- CI builds, runs the self-check twice (build + installed copy), builds the installer and uploads both assets.
+
 ## 3.5.0 — One-click diagnostics bundle for support
 
 ### Diagnostics bundle (new)

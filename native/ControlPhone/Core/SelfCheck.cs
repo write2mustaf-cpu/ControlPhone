@@ -47,6 +47,7 @@ public static class SelfCheck
             UpdateChecks();
             BatchChecks();
             DiagChecks();
+            SafeModeChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -396,6 +397,52 @@ public static class SelfCheck
         Check(DeviceVideo.Thumb(new DeviceMeta { ThumbFps = 500, ThumbMaxSize = 9000 }, st) == new VideoPlan(1920, 600_000, 60), "out-of-range overrides clamped");
         Check(DeviceVideo.HasOverrides(weak) && !DeviceVideo.HasOverrides(new DeviceMeta()) && !DeviceVideo.HasOverrides(null), "override detection");
         Check(!DeviceVideo.HasOverrides(Store.MetaOrNull(null)) && Store.MetaOrNull("missing-device") == null, "meta lookup does not create entries");
+    }
+
+    // ---------------- chế độ an toàn khi khởi động hỏng liên tiếp ----------------
+    static void SafeModeChecks()
+    {
+        Check(SessionGuard.FailsAfterStart(null) == 0, "first run is not a failure");
+        Check(SessionGuard.FailsAfterStart(new SessionState { LastStart = "t", LastReady = "t", Fails = 3 }) == 0, "graceful last run resets the counter");
+        Check(SessionGuard.FailsAfterStart(new SessionState { LastStart = "t", LastReady = null, Fails = 0 }) == 1, "unfinished last run counts");
+        Check(SessionGuard.FailsAfterStart(new SessionState { LastStart = "t", LastReady = null, Fails = 4 }) == 5, "counter keeps growing");
+        Check(!SessionGuard.ShouldUseSafeMode(1) && SessionGuard.ShouldUseSafeMode(2) && SessionGuard.ShouldUseSafeMode(7), "two unfinished starts enable safe mode");
+
+        var dir = Path.Combine(Path.GetTempPath(), "cp-sess-" + Guid.NewGuid().ToString("N")[..8]);
+        var path = Path.Combine(dir, "session.json");
+        try
+        {
+            Check(SessionGuard.Begin(path) == 0, "begin on a clean folder");
+            Check(SessionGuard.Begin(path) == 1, "begin again without ready counts one failure");
+            Check(SessionGuard.Begin(path) == 2, "and another one");
+            Check(SessionGuard.ShouldUseSafeMode(SessionGuard.Begin(path)), "safe mode offered after repeated failures");
+            SessionGuard.Ready(path);
+            Check(SessionGuard.Begin(path) == 0, "ready resets the counter");
+            SessionGuard.Clean(path);
+            Check(SessionGuard.Read(path)?.Fails == 0, "clean leaves a healthy state");
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
+
+        var heavy = new Settings { ThumbMaxSize = 720, ThumbFps = 30, ThumbBitRate = 2_000_000, HqMaxSize = 1920, HqFps = 60, HqBitRate = 8_000_000 };
+        var light = new Settings { ThumbMaxSize = 160, ThumbFps = 4, ThumbBitRate = 200_000, HqMaxSize = 640, HqFps = 10, HqBitRate = 800_000 };
+        var before = DeviceVideo.Thumb(new DeviceMeta { ThumbMaxSize = 1080, ThumbFps = 60 }, heavy);
+        Check(before.MaxSize == 1080 && before.MaxFps == 60, "without safe mode the per-phone values apply", before.ToString());
+
+        SafeMode.Activate(3);
+        try
+        {
+            var safeThumb = DeviceVideo.Thumb(new DeviceMeta { ThumbMaxSize = 1080, ThumbFps = 60 }, heavy);
+            Check(safeThumb == new VideoPlan(SafeMode.LightMaxSize, SafeMode.LightBitRate, SafeMode.LightFps), "safe mode caps the grid stream", safeThumb.ToString());
+            var safeHq = DeviceVideo.Hq(null, heavy);
+            Check(safeHq == new VideoPlan(SafeMode.LightHqMaxSize, SafeMode.LightHqBitRate, SafeMode.LightHqFps), "safe mode caps the viewer stream", safeHq.ToString());
+            var alreadyLight = DeviceVideo.Thumb(null, light);
+            Check(alreadyLight == new VideoPlan(160, 200_000, 4), "safe mode never makes a light profile heavier", alreadyLight.ToString());
+            Check(DeviceVideo.Thumb(new DeviceMeta { ThumbMaxSize = 1080 }, heavy).MaxSize <= SafeMode.LightMaxSize, "per-phone override ignored in safe mode");
+        }
+        finally { SafeMode.Reset(); }
+
+        Check(!SafeMode.Active && DeviceVideo.Thumb(null, heavy) == new VideoPlan(720, 2_000_000, 30), "leaving safe mode restores the user profile");
+        Check(SafeMode.Light(0, 240) == 240 && SafeMode.Light(120, 240) == 120 && SafeMode.Light(1000, 240) == 240, "light caps are one-way");
     }
 
     // ---------------- gói chẩn đoán (ghi tệp thật rồi đọc lại) ----------------
