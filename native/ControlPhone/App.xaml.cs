@@ -15,6 +15,13 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // tự kiểm tra không cần điện thoại (dùng trong CI): in PASS/FAIL rồi thoát với mã lỗi
+        if (e.Args.Contains("--selfcheck"))
+        {
+            var code = Core.SelfCheck.Run();
+            Shutdown(code);
+            return;
+        }
         // chỉ chạy 1 bản: mở lần 2 → đưa cửa sổ đang chạy lên trước
         single = new Mutex(true, "ControlPhone.Native.SingleInstance", out bool first);
         if (!first && !e.Args.Contains("--restart"))

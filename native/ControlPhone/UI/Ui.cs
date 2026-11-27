@@ -137,6 +137,7 @@ public class Dlg : Window
         Owner = Application.Current.MainWindow is { IsLoaded: true } mw && mw != this ? mw : null;
         SetResourceReference(BackgroundProperty, "Bg2");
         SetResourceReference(ForegroundProperty, "Text");
+        FlowDirection = I18n.FlowDirection;
         FontSize = 12.5;
         var dock = new DockPanel();
         DockPanel.SetDock(actions, Dock.Bottom);

@@ -52,6 +52,7 @@ public partial class MainWindow : Window
         this.single = single;
         DeviceManager.SingleAddr = single;
         InitializeComponent();
+        FlowDirection = I18n.FlowDirection;
         Ui.DarkTitleBar(this);
         if (SelfTest.On) { WindowState = WindowState.Normal; Left = -20000; Top = 0; Width = 1700; Height = 1000; ShowActivated = false; ShowInTaskbar = false; }
         manager = new DeviceManager(Dispatcher);
@@ -61,9 +62,13 @@ public partial class MainWindow : Window
         GridItems.ItemsSource = shown;
 
         manager.ListChanged += () => refreshTimer.Start();
-        manager.Log += (m, err) => Ui.Toast(m, err ? "err" : "");
+        manager.Log += (m, err) => { OpLog.Add(m, err); Ui.Toast(m, err ? "err" : ""); };
         manager.Clipboard += OnPhoneClipboard;
-        actions.TaskUpdated += OnTask;
+        actions.TaskUpdated += t =>
+        {
+            if (t.Finished) OpLog.Add($"{t.Op}: {t.OkCount}/{t.Total} ok, {t.Fail} failed — {t.Title}", t.Fail > 0);
+            OnTask(t);
+        };
         refreshTimer.Tick += (_, _) => { refreshTimer.Stop(); using (StallWatch.Op("dựng lại lưới")) RenderAll(); };
         statsTimer.Tick += (_, _) => { using (StallWatch.Op("thống kê băng thông")) UpdateBandwidth(); };
         tickTimer.Tick += (_, _) => { using (StallWatch.Op("vùng nhìn + theo dõi khung")) { UpdateVisibility(); manager.WatchTick(); } };
@@ -366,6 +371,7 @@ public partial class MainWindow : Window
         UpdateThemeIcon();
         BtnSettings.Click += (_, _) => DlgSettings();
         BtnDonate.Click += (_, _) => DlgDonate();
+        BtnAi.Click += (_, _) => ShowAiChat();
     }
 
     void UpdateThemeIcon() => BtnTheme.Content = Icons.Get(Theme.Current == "light" ? "moon" : "sun");

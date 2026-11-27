@@ -4,7 +4,7 @@ import { StreamDecoder, webCodecsSupported } from './decoder.js';
 import { esc, h, hydrateIcons, toast, modal, modalOpen, confirmBox, promptBox, ctxMenu, closeCtx, api, fmtSize, uploadFile } from './ui.js';
 import { androidKeycode, metaOf } from './keymap.js';
 import { initI18n, t as tr, LANGS, currentLang, setLang } from './i18n.js';
-import { DONATE } from './donate.js';
+import { DONATE, SUPPORT } from './donate.js';
 
 await initI18n(); // nạp ngôn ngữ trước khi dựng giao diện
 
@@ -1048,6 +1048,22 @@ function dlgDonate() {
           <div class="donate-acts">
             <a class="btn primary" href="${esc(DONATE.paypal)}" target="_blank" rel="noopener">${icon('heart')}<span>Mở PayPal</span></a>
             <button class="btn" data-copy="${esc(DONATE.paypal)}">${icon('copy')}<span>Sao chép</span></button>
+          </div>
+        </div>
+        <div class="donate-card">
+          <div class="donate-h">Liên hệ &amp; hỗ trợ</div>
+          <div class="donate-addr" data-no-i18n>${esc(SUPPORT.email)}</div>
+          <div class="donate-acts">
+            <a class="btn" href="mailto:${esc(SUPPORT.email)}" target="_blank" rel="noopener">${icon('heart')}<span>Gửi email hỗ trợ</span></a>
+            <a class="btn" href="${esc(SUPPORT.telegramChannel)}" target="_blank" rel="noopener">${icon('link')}<span>Kênh Telegram</span></a>
+          </div>
+          <div class="donate-acts">
+            <a class="btn" href="${esc(SUPPORT.telegramGroup)}" target="_blank" rel="noopener">${icon('link')}<span>Nhóm Telegram</span></a>
+            <a class="btn" href="${esc(SUPPORT.facebook)}" target="_blank" rel="noopener">${icon('link')}<span>Trang Facebook</span></a>
+          </div>
+          <div class="donate-addr mono" data-no-i18n>Sham Cash: ${esc(SUPPORT.shamCash)}</div>
+          <div class="donate-acts">
+            <button class="btn" data-copy="${esc(SUPPORT.shamCash)}">${icon('copy')}<span>Sao chép mã</span></button>
           </div>
         </div>
         <div class="donate-card">
