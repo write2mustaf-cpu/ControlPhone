@@ -10,6 +10,9 @@ public sealed record ReleaseInfo(
 {
     public bool HasInstaller => SetupBytes > 0 && SetupName != "";
 
+    /// <summary>Có gói ZIP chạy được để tải (không phải manifests/symbols).</summary>
+    public bool HasZip => ZipBytes > 0 && ZipName != "";
+
     public string SetupUrl => $"{Updates.RepoUrl}/releases/download/{Tag}/{SetupName}";
     public string ZipUrl => $"{Updates.RepoUrl}/releases/download/{Tag}/{ZipName}";
 
@@ -20,6 +23,13 @@ public sealed record ReleaseInfo(
     }.Where(x => x != null));
 
     static string Mb(long bytes) => (bytes / 1048576.0).ToString("0.0") + " MB";
+}
+
+/// <summary>Tệp đính kèm đã chọn của một bản phát hành — chỉ gói chạy được, không phải manifest hay ký hiệu gỡ lỗi.</summary>
+public sealed record ReleaseAssets(string ZipName, long ZipBytes, string SetupName, long SetupBytes)
+{
+    public bool HasZip => ZipBytes > 0 && ZipName != "";
+    public bool HasSetup => SetupBytes > 0 && SetupName != "";
 }
 
 /// <summary>
@@ -55,6 +65,48 @@ public static class Updates
 
     public static bool SameVersion(Version a, Version b) => Normalize(a) == Normalize(b);
 
+    /// <summary>Tên tệp không phải bản chạy được: manifest gói cài, ký hiệu gỡ lỗi, mã nguồn, bảng băm.</summary>
+    static readonly string[] NotRunnable = ["manifest", "symbol", "source", "checksum", "sha256", "debug"];
+
+    /// <summary>
+    /// Chọn đúng gói cài và gói ZIP trong danh sách đính kèm. Không dựa vào thứ tự API trả về: một bản phát hành có thêm
+    /// tệp (manifest của winget/Scoop, ký hiệu gỡ lỗi) không được biến "Tải ZIP" thành một tệp YAML vài KB.
+    /// Ưu tiên tên chuẩn (Setup… / …-win64.zip), sau đó tới tệp lớn nhất.
+    /// </summary>
+    public static ReleaseAssets PickAssets(IEnumerable<(string Name, long Size)> assets)
+    {
+        string zipName = "", setupName = "";
+        long zipSize = 0, setupSize = 0;
+        foreach (var (name, size) in assets)
+        {
+            if (string.IsNullOrWhiteSpace(name) || size <= 0) continue;
+            var lower = name.ToLowerInvariant();
+            if (lower.EndsWith(".exe"))
+            {
+                if (Better(lower, size, setupName, setupSize, setup: true)) { setupName = name; setupSize = size; }
+            }
+            else if (lower.EndsWith(".zip"))
+            {
+                if (NotRunnable.Any(lower.Contains)) continue;
+                if (Better(lower, size, zipName, zipSize, setup: false)) { zipName = name; zipSize = size; }
+            }
+        }
+        return new ReleaseAssets(zipName, zipSize, setupName, setupSize);
+    }
+
+    /// <summary>Điểm theo tên chuẩn; hoà điểm thì tệp lớn hơn thắng.</summary>
+    static bool Better(string lower, long size, string currentName, long currentSize, bool setup)
+    {
+        if (currentName == "") return true;
+        var current = currentName.ToLowerInvariant();
+        int mine = Score(lower, setup), theirs = Score(current, setup);
+        return mine > theirs || (mine == theirs && size > currentSize);
+    }
+
+    static int Score(string lower, bool setup) => setup
+        ? (lower.Contains("setup") ? 100 : 0)
+        : (lower.Contains("win64") ? 100 : 0) + (lower.Contains("portable") ? 50 : 0);
+
     /// <summary>Thông báo khi có bản mới hơn và người dùng chưa bấm «bỏ qua bản này».</summary>
     public static bool ShouldNotify(ReleaseInfo? info, string? skippedVersion) =>
         info != null && IsNewer(info.Version, Current) &&
@@ -76,17 +128,16 @@ public static class Updates
             var title = Str(r, "name") is { Length: > 0 } n ? n : tag;
             var notes = Str(r, "body") ?? "";
             DateTimeOffset? published = DateTimeOffset.TryParse(Str(r, "published_at"), out var dt) ? dt : null;
-            long zipBytes = 0, setupBytes = 0;
-            string zipName = "", setupName = "";
+            var listed = new List<(string Name, long Size)>();
             if (r.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
                 foreach (var a in assets.EnumerateArray())
                 {
                     var name = Str(a, "name") ?? "";
                     var size = a.TryGetProperty("size", out var sz) && sz.TryGetInt64(out var v) ? v : 0;
-                    if (name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) { zipBytes = size; zipName = name; }
-                    else if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) { setupBytes = size; setupName = name; }
+                    listed.Add((name, size));
                 }
-            return new ReleaseInfo(ver, tag, url, title, notes, published, zipBytes, zipName, setupBytes, setupName);
+            var picked = PickAssets(listed);
+            return new ReleaseInfo(ver, tag, url, title, notes, published, picked.ZipBytes, picked.ZipName, picked.SetupBytes, picked.SetupName);
         }
         catch { return null; }
     }

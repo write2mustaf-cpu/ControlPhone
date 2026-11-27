@@ -734,4 +734,5 @@ export default {
   "Máy đang mở xem: dán qua clipboard nên gõ được mọi ký tự có dấu. Máy không mở xem: chỉ ASCII qua adb.": "已打开投屏的手机可接收任意文本（剪贴板粘贴）；未打开的仅通过 adb 接收 ASCII。",
   "Kết quả từng máy hiện trong bảng kết quả — có thể dừng một máy hoặc thử lại đúng máy lỗi.": "每台手机的结果显示在结果面板中——可单独停止某台或只重试失败的手机。",
   "Gõ chữ": "输入文本",
+  "Tải ZIP": "下载 ZIP",
 };

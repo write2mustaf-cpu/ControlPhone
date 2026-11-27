@@ -812,6 +812,35 @@ public static class SelfCheck
         Check(rel.ZipUrl.EndsWith(".zip") && rel.AssetsLine().Contains("Setup") && rel.AssetsLine().Contains("ZIP"), "asset line built");
         Check(rel.Url == "https://example.invalid/rel" && rel.Notes == "notes here" && rel.Published != null, "release metadata parsed");
 
+        // 3.15.0 trở đi mỗi bản có ba tệp: bộ cài, ZIP chạy được và manifests.zip (vài KB). Chọn nhầm tệp cuối là một
+        // nút "Tải ZIP" trả về YAML thay vì ứng dụng — đúng lỗi mà bộ chọn tệp dưới đây phải chặn.
+        var three = new (string, long)[]
+        {
+            ("ControlPhone-Setup-v99.0.0-win64.exe", 60483164),
+            ("ControlPhone-v99.0.0-manifests.zip", 2630),
+            ("ControlPhone-v99.0.0-win64.zip", 84228493),
+        };
+        var picked = Updates.PickAssets(three);
+        Check(picked.ZipName == "ControlPhone-v99.0.0-win64.zip" && picked.ZipBytes == 84228493, "the portable ZIP is picked, not the manifests archive", picked.ZipName);
+        Check(picked.SetupName == "ControlPhone-Setup-v99.0.0-win64.exe" && picked.HasSetup, "the installer is picked", picked.SetupName);
+        Check(Updates.PickAssets(three.Reverse()).ZipName == picked.ZipName, "asset order from the API does not matter");
+        Check(Updates.PickAssets([("ControlPhone-v99.0.0-manifests.zip", 99999999), ("ControlPhone-v99.0.0-win64.zip", 1000)]).ZipName.EndsWith("-win64.zip"),
+            "a bigger manifests archive never wins");
+        Check(Updates.PickAssets([("ControlPhone-v99.0.0-manifests.zip", 2630)]).HasZip == false, "manifests alone is not a portable package");
+        Check(Updates.PickAssets([("ControlPhone-v99.0.0-symbols.zip", 500), ("ControlPhone.zip", 700)]).ZipName == "ControlPhone.zip", "symbols skipped, plain zip accepted");
+        Check(Updates.PickAssets([("portable.zip", 10), ("ControlPhone-Setup-v99.0.0-win64.exe", 20)]).HasZip, "zip without the win64 suffix still counts");
+        Check(Updates.PickAssets([("ControlPhone-Setup-v99.0.0-win64.exe", 0), ("ControlPhone-v99.0.0-win64.zip", 0)]).HasSetup == false,
+            "zero-size assets are not offered (an upload in progress is a dead link)");
+        Check(Updates.PickAssets([]).HasZip == false && Updates.PickAssets([]).HasSetup == false, "no assets means no buttons");
+        {
+            const string threeJson = "{\"tag_name\":\"v99.0.0\",\"assets\":["
+                + "{\"name\":\"ControlPhone-v99.0.0-manifests.zip\",\"size\":2630},"
+                + "{\"name\":\"ControlPhone-v99.0.0-win64.zip\",\"size\":84228493},"
+                + "{\"name\":\"ControlPhone-Setup-v99.0.0-win64.exe\",\"size\":60483164}]}";
+            var r3 = Updates.Parse(threeJson);
+            Check(r3?.ZipUrl.EndsWith("/ControlPhone-v99.0.0-win64.zip") == true && r3.ZipBytes == 84228493, "parse keeps the runnable ZIP with three assets", r3?.ZipName);
+        }
+
         Check(Updates.Parse(json.Replace("\"draft\":false", "\"draft\":true")) == null, "draft release ignored");
         Check(Updates.Parse(json.Replace("\"prerelease\":false", "\"prerelease\":true")) == null, "prerelease ignored");
         Check(Updates.Parse("not json") == null && Updates.Parse("{}") == null && Updates.Parse("") == null && Updates.Parse(null) == null, "broken responses rejected");

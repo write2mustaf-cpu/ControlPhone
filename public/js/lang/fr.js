@@ -734,4 +734,5 @@ export default {
   "Máy đang mở xem: dán qua clipboard nên gõ được mọi ký tự có dấu. Máy không mở xem: chỉ ASCII qua adb.": "Les téléphones avec session miroir reçoivent tout texte (presse-papiers). Sans session : ASCII seulement, via adb.",
   "Kết quả từng máy hiện trong bảng kết quả — có thể dừng một máy hoặc thử lại đúng máy lỗi.": "Le résultat de chaque téléphone apparaît dans le panneau — arrêtez un téléphone ou relancez seulement ceux en échec.",
   "Gõ chữ": "Saisir du texte",
+  "Tải ZIP": "Télécharger le ZIP",
 };

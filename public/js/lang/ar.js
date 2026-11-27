@@ -827,4 +827,5 @@ export default {
   "Máy đang mở xem: dán qua clipboard nên gõ được mọi ký tự có dấu. Máy không mở xem: chỉ ASCII qua adb.": "الهواتف ذات جلسة العرض تستقبل أي نص (لصق من الحافظة). أما بدون جلسة فتُقبل ASCII فقط عبر adb.",
   "Kết quả từng máy hiện trong bảng kết quả — có thể dừng một máy hoặc thử lại đúng máy lỗi.": "تظهر نتيجة كل هاتف في لوحة النتائج — يمكنك إيقاف هاتف واحد أو إعادة المحاولة للهواتف الفاشلة فقط.",
   "Gõ chữ": "كتابة نص",
+  "Tải ZIP": "تنزيل ZIP",
 };

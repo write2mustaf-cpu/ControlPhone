@@ -63,8 +63,13 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (275 checks as of 3.14.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (285 checks as of 3.16.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
+
+## Release assets
+- `Updates.PickAssets` chooses the installer and the runnable ZIP from a release's asset list **by name** (`Setup…`,
+  `…-win64.zip`), skipping `manifests`/`symbols`/`source` archives and zero-size entries. Never pick "the last .zip" —
+  every release since 3.15 also carries `ControlPhone-v<ver>-manifests.zip` (~2 KB).
 
 ## Packaging
 - `tools/package_manifests.py` — generates winget (3 YAML) + Scoop (1 JSON) + `manifests.json` from the real release
