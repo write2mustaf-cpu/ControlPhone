@@ -103,6 +103,7 @@ public partial class MainWindow : Window
             }
             RenderAll();
             if (SelfTest.On) _ = RunSelfTest();
+            else CheckUpdatesAuto();
             if (!SelfTest.On) StallWatch.Start(Dispatcher);
             PerfLog.Start(Dispatcher, () => $"ô {PhoneTile.Live.Count} · online {manager.Devices.Count(d => d.IsOnline)} · có hình {manager.Devices.Count(d => d.HasFrame)} · tăng tốc {manager.Devices.Count(d => d.Boost != null)}");
         };

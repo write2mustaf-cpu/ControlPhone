@@ -7,8 +7,16 @@ Repository notes for AI agents working on ControlPhone (multi-phone Android cont
 - `native/ControlPhone/` — the product: WPF app on .NET 9 (`ControlPhone.exe`), all engines (ADB socket client,
   scrcpy-server sessions, FFmpeg decoding, device manager, group sync, recovery, OTG/LAN).
   - `Ai/` — provider manager, DPAPI secret storage, protocol client, tool registry, agent loop, chat window.
-  - `Core/` — devices, ADB, settings store, i18n, operation log, support info, `SelfCheck.cs`.
-  - `MainWindow.*.cs` — partials: grid/selection, dialogs, menus, AI host bridge, support dialog, settings export.
+  - `Core/` — devices, ADB, settings store, i18n, operation log, support info, `SelfCheck.cs`, plus:
+    - `Crash.cs` — global exception handlers, `data/logs/crash.log` (512 KB rotation, API keys stripped), technical report.
+    - `SettingsSanitizer.cs` — one clamp/validate rule set for `config.json`, `ui.json`, `ai.json` and the import dialog;
+      corrections are logged to the operation log. **Add new settings here too**, otherwise a hand-edited file wins.
+    - `DeviceVideo.cs` — per-phone grid/viewer resolution, fps, bitrate (null override = global). Used by
+      `DeviceManager.ThumbOptions/HqOptions`; read metas with `Store.MetaOrNull` (never `Store.Meta` in hot paths).
+    - `Updates.cs` — GitHub `releases/latest` check: `ParseTag`/`IsNewer`/`Parse`/`ShouldNotify` are pure and covered by
+      the self-check; nothing is downloaded or installed automatically.
+  - `MainWindow.*.cs` — partials: grid/selection, dialogs, menus, AI host bridge, support dialog, settings export,
+    per-phone video (`MainWindow.Video.cs`), update prompts (`MainWindow.Updates.cs`).
 - `public/` + `server/` — legacy web build (Node + plain JS). Shares `public/js/lang/*.js` translations.
 - `tools/setup.js` — downloads scrcpy/adb into `vendor/` (gitignored, required before building the app).
 - `docs/` — user docs; `docs/ar/` Arabic guide.
@@ -33,6 +41,10 @@ npm run i18n:check                  # key coverage per language
 - RTL: `I18n.FlowDirection` is applied to windows; technical inputs (URLs, commands, keys) use `I18n.ForceLtr`.
 - API keys never touch the repo or logs: `AiSecret` (DPAPI) + `AiStore` (`data/ai/ai.json`), redacted in errors.
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
+- Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
+  prompt (rule 11) — keep both when touching the agent loop.
+- `--selfcheck` is the regression suite (130 checks as of 3.3.0): every new pure helper gets a `Check(...)` line, and
+  CI runs it twice (build output + installed copy from the installer).
 
 ## Gotchas
 

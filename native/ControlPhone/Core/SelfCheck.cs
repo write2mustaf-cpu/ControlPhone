@@ -44,6 +44,7 @@ public static class SelfCheck
             ToolChecks();
             RobustnessChecks();
             SanitizerChecks();
+            UpdateChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -393,6 +394,45 @@ public static class SelfCheck
         Check(DeviceVideo.Thumb(new DeviceMeta { ThumbFps = 500, ThumbMaxSize = 9000 }, st) == new VideoPlan(1920, 600_000, 60), "out-of-range overrides clamped");
         Check(DeviceVideo.HasOverrides(weak) && !DeviceVideo.HasOverrides(new DeviceMeta()) && !DeviceVideo.HasOverrides(null), "override detection");
         Check(!DeviceVideo.HasOverrides(Store.MetaOrNull(null)) && Store.MetaOrNull("missing-device") == null, "meta lookup does not create entries");
+    }
+
+    // ---------------- kiểm tra bản cập nhật (phân tích thuần, không cần mạng) ----------------
+    static void UpdateChecks()
+    {
+        Check(Updates.ParseTag("v3.2.0") == new Version(3, 2, 0), "release tag parsed", Updates.ParseTag("v3.2.0")?.ToString());
+        Check(Updates.ParseTag("3.2") == new Version(3, 2), "two-part tag parsed");
+        Check(Updates.ParseTag("v4.0.0-beta.1") == null && Updates.ParseTag("abc") == null && Updates.ParseTag("") == null && Updates.ParseTag(null) == null, "invalid tags rejected");
+        Check(Updates.IsNewer(new Version(3, 3, 0), new Version(3, 2, 0)), "newer version detected");
+        Check(!Updates.IsNewer(new Version(3, 2, 0), new Version(3, 2, 0)) && !Updates.IsNewer(new Version(3, 1, 9), new Version(3, 2, 0)), "same/older version not newer");
+        Check(Updates.IsNewer(new Version(3, 10, 0), new Version(3, 9, 0)), "numeric compare, not string compare");
+        Check(Updates.IsNewer(new Version(4, 0), new Version(3, 99, 99)), "major version wins");
+
+        const string json = "{\"tag_name\":\"v99.0.0\",\"name\":\"ControlPhone 99\",\"html_url\":\"https://example.invalid/rel\","
+            + "\"body\":\"notes here\",\"published_at\":\"2026-01-02T03:04:05Z\",\"draft\":false,\"prerelease\":false,"
+            + "\"assets\":[{\"name\":\"ControlPhone-v99.0.0-win64.zip\",\"size\":84150874},"
+            + "{\"name\":\"ControlPhone-Setup-v99.0.0-win64.exe\",\"size\":60422980}]}";
+        var rel = Updates.Parse(json);
+        Check(rel is { Tag: "v99.0.0" } && rel.Version == new Version(99, 0, 0), "release parsed", rel?.Tag);
+        Check(rel?.ZipBytes == 84150874 && rel.SetupBytes == 60422980 && rel.HasInstaller, "release assets parsed", rel?.AssetsLine());
+        Check(rel!.SetupUrl.EndsWith("/releases/download/v99.0.0/ControlPhone-Setup-v99.0.0-win64.exe"), "installer url built", rel.SetupUrl);
+        Check(rel.ZipUrl.EndsWith(".zip") && rel.AssetsLine().Contains("Setup") && rel.AssetsLine().Contains("ZIP"), "asset line built");
+        Check(rel.Url == "https://example.invalid/rel" && rel.Notes == "notes here" && rel.Published != null, "release metadata parsed");
+
+        Check(Updates.Parse(json.Replace("\"draft\":false", "\"draft\":true")) == null, "draft release ignored");
+        Check(Updates.Parse(json.Replace("\"prerelease\":false", "\"prerelease\":true")) == null, "prerelease ignored");
+        Check(Updates.Parse("not json") == null && Updates.Parse("{}") == null && Updates.Parse("") == null && Updates.Parse(null) == null, "broken responses rejected");
+        Check(Updates.Parse("{\"tag_name\":\"nightly\"}") == null, "release without a numeric tag rejected");
+
+        Check(Updates.ShouldNotify(rel, null), "newer release notifies");
+        Check(!Updates.ShouldNotify(rel, "v99.0.0"), "skipped release stays quiet");
+        Check(Updates.ShouldNotify(rel, "v98.0.0"), "skipping an older release does not mute the new one");
+        Check(!Updates.ShouldNotify(null, null), "no release, no notification");
+
+        var ui = new UiPrefs { LastUpdateCheck = "yesterday-ish", SkipVersion = "nightly" };
+        var fixes = SettingsSanitizer.Apply(ui);
+        Check(ui.LastUpdateCheck == "" && ui.SkipVersion == "" && fixes.Count >= 2, "bogus update prefs cleared", string.Join(",", fixes));
+        var ok = new UiPrefs { LastUpdateCheck = "2026-01-02 03:04", SkipVersion = "v3.2.0" };
+        Check(SettingsSanitizer.Apply(ok).Count == 0, "valid update prefs kept");
     }
 
     // ---------------- thông tin hỗ trợ ----------------

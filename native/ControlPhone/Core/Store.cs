@@ -101,6 +101,11 @@ public sealed class UiPrefs
     public string Filter { get; set; } = "all";
     public string Theme { get; set; } = "dark";
     public string Lang { get; set; } = "";
+    /// <summary>Tự kiểm tra bản mới khi khởi động (tối đa 1 lần/24 giờ).</summary>
+    public bool CheckUpdates { get; set; } = true;
+    public string LastUpdateCheck { get; set; } = "";
+    /// <summary>Thẻ bản phát hành người dùng đã bấm «bỏ qua» — không nhắc lại bản đó.</summary>
+    public string SkipVersion { get; set; } = "";
     public bool SyncOff { get; set; }
     /// <summary>Chỉ hiển thị máy đang kết nối (ẩn máy mất kết nối khỏi lưới).</summary>
     public bool HideOffline { get; set; }
