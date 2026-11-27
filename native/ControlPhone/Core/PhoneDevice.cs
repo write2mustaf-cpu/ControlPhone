@@ -40,7 +40,20 @@ public sealed class PhoneDevice : INotifyPropertyChanged
     public bool AutoBootOk { get; internal set; }
 
     // ---- trạng thái ----
-    public string Status { get; internal set; } = "offline"; // online | connecting | offline | unauthorized | error | authorizing
+    string status = "offline";
+    public string Status // online | connecting | offline | unauthorized | error | authorizing
+    {
+        get => status;
+        internal set
+        {
+            if (status == value) return;
+            var from = status;
+            status = value;
+            DeviceLog.Add(Id, $"status {from} → {value}{(Error != "" ? " · " + Error : "")}", value == "error");
+            Raise(nameof(Status));
+        }
+    }
+
     public string Error { get; internal set; } = "";
     public bool Zoomed => HqRefs > 0;
     public bool Paused => !Pending && Store.State.Devices.TryGetValue(Id, out var m) && m.Paused;

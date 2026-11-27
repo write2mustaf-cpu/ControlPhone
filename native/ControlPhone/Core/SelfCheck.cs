@@ -48,6 +48,7 @@ public static class SelfCheck
             BatchChecks();
             DiagChecks();
             SafeModeChecks();
+            DeviceLogChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -397,6 +398,48 @@ public static class SelfCheck
         Check(DeviceVideo.Thumb(new DeviceMeta { ThumbFps = 500, ThumbMaxSize = 9000 }, st) == new VideoPlan(1920, 600_000, 60), "out-of-range overrides clamped");
         Check(DeviceVideo.HasOverrides(weak) && !DeviceVideo.HasOverrides(new DeviceMeta()) && !DeviceVideo.HasOverrides(null), "override detection");
         Check(!DeviceVideo.HasOverrides(Store.MetaOrNull(null)) && Store.MetaOrNull("missing-device") == null, "meta lookup does not create entries");
+    }
+
+    // ---------------- nhật ký riêng của từng máy ----------------
+    static void DeviceLogChecks()
+    {
+        const string a = "selfcheck-a", b = "selfcheck-b";
+        try
+        {
+            DeviceLog.Clear(a);
+            DeviceLog.Clear(b);
+            DeviceLog.Add(a, "status offline → connecting");
+            DeviceLog.Add(a, "status connecting → online");
+            DeviceLog.Add(b, "status offline → error · mất kết nối", error: true);
+            Check(DeviceLog.Tail(a, 50).Count == 2, "device log keeps entries per phone", DeviceLog.Tail(a, 50).Count + " entries");
+            Check(DeviceLog.Tail(b, 50).Count == 1, "entries do not leak between phones");
+            Check(DeviceLog.Tail(a, 50)[^1].Text.Contains("online") && !DeviceLog.Tail(a, 50)[^1].Error, "latest entry last, plain entry not an error");
+            Check(DeviceLog.Tail(b, 50)[0].Error, "error entries are flagged");
+            Check(DeviceLog.Format(a, 10).Contains("→ online"), "formatted log contains the transition");
+            Check(File.Exists(DeviceLog.PathFor(a)) && File.ReadAllText(DeviceLog.PathFor(a)).Contains("→ online"), "log is appended to its own file");
+
+            for (var i = 0; i < 320; i++) DeviceLog.Add(a, "bulk " + i);
+            Check(DeviceLog.Tail(a, 1000).Count == 300, "in-memory log is capped at 300 lines", DeviceLog.Tail(a, 1000).Count + " lines");
+
+            Check(DeviceLog.SafeName("192.168.1.5:5555") == "192.168.1.5_5555", "wifi serial is made file-safe", DeviceLog.SafeName("192.168.1.5:5555"));
+            Check(DeviceLog.SafeName("") == "device" && !DeviceLog.SafeName("..//").Contains('/'), "empty or hostile ids get a safe name");
+
+            var rot = Path.Combine(DeviceLog.Dir, "rotate-test.log");
+            Directory.CreateDirectory(DeviceLog.Dir);
+            File.WriteAllText(rot, new string('x', (int)DeviceLog.MaxFileBytes + 10));
+            DeviceLog.Rotate(rot);
+            Check(!File.Exists(rot) && File.Exists(rot + ".1"), "large log is rotated to .1");
+            File.Delete(rot + ".1");
+
+            DeviceLog.Clear(a);
+            Check(DeviceLog.Tail(a, 10).Count == 0 && !File.Exists(DeviceLog.PathFor(a)), "clearing removes memory and file");
+        }
+        finally
+        {
+            DeviceLog.Clear(a);
+            DeviceLog.Clear(b);
+            try { File.Delete(Path.Combine(DeviceLog.Dir, "rotate-test.log.1")); } catch { }
+        }
     }
 
     // ---------------- chế độ an toàn khi khởi động hỏng liên tiếp ----------------

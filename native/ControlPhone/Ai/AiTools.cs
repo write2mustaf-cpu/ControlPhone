@@ -75,6 +75,10 @@ public sealed class AiToolHost
         new("device_details", "Full details of one phone: model, Android/SDK, battery, temperature, IP, transports, groups, root, paused state, current errors.",
             Schema(("device", "string", DeviceArgReq, true)), false, (a, ct) => Task.FromResult(Details(a))),
 
+        new("device_log", "Read the per-phone log of one phone: connection state changes, stream errors and the results of operations run on that phone. Use it to diagnose a phone that keeps failing.",
+            Schema(("device", "string", DeviceArgReq, true), ("lines", "number", "How many recent lines (default 40, max 200)", false)),
+            false, (a, ct) => Task.FromResult(DeviceLogOf(a))),
+
         new("list_groups", "List device groups defined by the user.", Schema(), false, (a, ct) => Task.FromResult(Groups())),
 
         new("assign_group", "Add or remove phones from a named group (creates the group when missing).",
@@ -251,6 +255,22 @@ public sealed class AiToolHost
         var t = Targets(a);
         if (t.Count == 0) return new AiToolResult(false, NoTargets(), "no target");
         return new AiToolResult(true, string.Join("\n\n", t.Select(x => host.DeviceDetails(x.Id))), "details of " + Ids(t));
+    }
+
+    AiToolResult DeviceLogOf(JsonObject a)
+    {
+        var t = Targets(a);
+        if (t.Count == 0) return new AiToolResult(false, NoTargets(), "no target");
+        var lines = a["lines"] is JsonNode n && int.TryParse(n.ToString(), out var l) ? Math.Clamp(l, 1, 200) : 40;
+        var sb = new StringBuilder();
+        foreach (var d in t)
+        {
+            var text = DeviceLog.Format(d.Id, lines);
+            sb.AppendLine($"#{d.Num} · {d.Name} — {(text == "" ? "no entries yet" : "last " + lines + " lines:")}");
+            if (text != "") sb.AppendLine(text);
+            sb.AppendLine();
+        }
+        return new AiToolResult(true, sb.ToString().TrimEnd(), "log of " + Ids(t));
     }
 
     AiToolResult Groups()
