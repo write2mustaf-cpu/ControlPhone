@@ -23,6 +23,8 @@ public static class Shortcuts
     public const string AiChat = "ai-chat";
     public const string Screenshot = "screenshot";
     public const string Help = "help";
+    public const string MoveEarlier = "move-earlier";
+    public const string MoveLater = "move-later";
 
     public static readonly Shortcut[] All =
     [
@@ -37,6 +39,8 @@ public static class Shortcuts
         new(Key.R, ModifierKeys.Control, RestartStream, "Kết nối lại luồng hình"),
         new(Key.A, ModifierKeys.Control | ModifierKeys.Shift, AiChat, "Mở trợ lý AI"),
         new(Key.S, ModifierKeys.Control | ModifierKeys.Shift, Screenshot, "Chụp màn hình máy đang chọn"),
+        new(Key.Left, ModifierKeys.Control | ModifierKeys.Shift, MoveEarlier, "Dời ô đang chọn về trước"),
+        new(Key.Right, ModifierKeys.Control | ModifierKeys.Shift, MoveLater, "Dời ô đang chọn ra sau"),
         new(Key.F1, ModifierKeys.None, Help, "Danh sách phím tắt"),
     ];
 

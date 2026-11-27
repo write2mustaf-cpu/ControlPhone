@@ -210,6 +210,17 @@ the operation log, and keeps your device names and numbers.
 - **Navigation bar visible in games on Android 10** — select the phones → right-click → ADB commands → *Hide 3-button bar for the current app*.
 - **No video in the browser** — use a recent Microsoft Edge or Google Chrome (WebCodecs required).
 
+### Putting phones where you want them
+
+The grid sorts by number, name, status or battery — but a farm is rarely in that order. Two new commands put a phone
+where you expect it: **Move earlier** and **Move later** (tile right-click menu, or `Ctrl+Shift+←` / `Ctrl+Shift+→` with
+exactly one phone selected). The first move switches the sort box to **Manual order** and saves the arrangement, so it
+survives restarts and appears in user-data backups.
+
+The stored order is a list of phone ids, normalised every render: a phone you add later appears at the end, a phone you
+remove disappears from the list, and the same phone can never appear twice. Moving with a filter active (for example
+"USB only") still inserts the phone next to its neighbour in the full list, so nothing hidden jumps position.
+
 ### Typing text into phones
 
 Text goes through the mirror session when one is open — that is the only route that carries Arabic, Vietnamese or

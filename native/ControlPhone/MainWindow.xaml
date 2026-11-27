@@ -94,6 +94,7 @@
                     <ComboBoxItem Tag="name" Content="Theo tên"/>
                     <ComboBoxItem Tag="status" Content="Theo trạng thái"/>
                     <ComboBoxItem Tag="battery" Content="Theo pin"/>
+                    <ComboBoxItem Tag="manual" Content="Thứ tự tự xếp"/>
                 </ComboBox>
                 <Button x:Name="BtnHideOff" DockPanel.Dock="Right" Style="{DynamicResource Ghost}" Margin="4,0"
                         ToolTip="Chỉ hiển thị máy đang kết nối: ẩn các máy mất kết nối khỏi lưới (máy kết nối lại sẽ tự hiện). Bấm lại để hiện tất cả.">

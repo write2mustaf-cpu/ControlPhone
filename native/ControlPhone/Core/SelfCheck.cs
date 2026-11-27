@@ -1,3 +1,4 @@
+using System.Windows.Input;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -53,6 +54,7 @@ public static class SelfCheck
             BackupChecks();
             ShortcutChecks();
             TypingChecks();
+            ManualOrderChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -402,6 +404,35 @@ public static class SelfCheck
         Check(DeviceVideo.Thumb(new DeviceMeta { ThumbFps = 500, ThumbMaxSize = 9000 }, st) == new VideoPlan(1920, 600_000, 60), "out-of-range overrides clamped");
         Check(DeviceVideo.HasOverrides(weak) && !DeviceVideo.HasOverrides(new DeviceMeta()) && !DeviceVideo.HasOverrides(null), "override detection");
         Check(!DeviceVideo.HasOverrides(Store.MetaOrNull(null)) && Store.MetaOrNull("missing-device") == null, "meta lookup does not create entries");
+    }
+
+    // ---------------- thứ tự ô tự xếp ----------------
+    static void ManualOrderChecks()
+    {
+        var stored = new List<string> { "c", "a", "gone" };
+        var norm = ManualOrder.Normalize(new[] { "a", "b", "c" }, stored);
+        Check(norm.SequenceEqual(["c", "a", "b"]), "saved order wins, new phones go to the end", string.Join(",", norm));
+        Check(!norm.Contains("gone"), "a phone that is gone is dropped from the order");
+        Check(ManualOrder.Normalize(new[] { "a", "a", "b" }, ["a"]).SequenceEqual(["a", "b"]), "the order never duplicates a phone");
+        Check(ManualOrder.Normalize(Array.Empty<string>(), stored).Count == 0, "an empty grid yields an empty order");
+
+        var order = new List<string> { "a", "b", "c" };
+        Check(ManualOrder.Move(order, "b", -1).SequenceEqual(["b", "a", "c"]), "moving earlier swaps with the phone before");
+        Check(ManualOrder.Move(order, "b", 1).SequenceEqual(["a", "c", "b"]), "moving later swaps with the phone after");
+        Check(ManualOrder.Move(order, "a", -1).SequenceEqual(["a", "b", "c"]), "the first phone stays first");
+        Check(ManualOrder.Move(order, "c", 5).SequenceEqual(["a", "b", "c"]), "the last phone stays last");
+        Check(ManualOrder.Move(order, "zz", 1).SequenceEqual(["a", "b", "c"]), "an unknown phone changes nothing");
+        Check(order.SequenceEqual(["a", "b", "c"]), "moving returns a new list and leaves the input untouched");
+
+        Check(ManualOrder.MovePast(["a", "b", "c"], "c", "a", -1).SequenceEqual(["c", "a", "b"]), "MovePast inserts before the neighbour");
+        Check(ManualOrder.MovePast(["a", "b", "c"], "a", "c", 1).SequenceEqual(["b", "c", "a"]), "MovePast inserts after the neighbour");
+        Check(ManualOrder.MovePast(["a", "b", "c"], "a", "zz", 1).SequenceEqual(["b", "c"]), "a missing neighbour leaves the phone out of the list");
+
+        Check(Shortcuts.Match(Key.Left, ModifierKeys.Control | ModifierKeys.Shift) == Shortcuts.MoveEarlier, "Ctrl+Shift+Left moves the tile earlier");
+        Check(Shortcuts.Match(Key.Right, ModifierKeys.Control | ModifierKeys.Shift) == Shortcuts.MoveLater, "Ctrl+Shift+Right moves the tile later");
+        Check(Shortcuts.Match(Key.Left, ModifierKeys.Control) == null, "Ctrl+Left alone is not a shortcut");
+        Check(!Shortcuts.WorksWhileTyping(Shortcuts.MoveEarlier), "moving a tile never steals keys from a text field");
+        Check(Shortcuts.All.Select(x => x.Action).Distinct().Count() == Shortcuts.All.Length, "every shortcut action is unique");
     }
 
     // ---------------- gõ chữ vào điện thoại ----------------

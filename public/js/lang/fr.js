@@ -724,4 +724,11 @@ export default {
   "Máy chưa sẵn sàng": "Téléphone pas encore prêt",
   "qua adb": "via adb",
   "{0} máy không nhận được chữ — {1}": "{0} téléphone(s) n'ont pas reçu le texte — {1}",
+  "Thứ tự tự xếp": "Ordre manuel",
+  "Dời về trước": "Déplacer avant",
+  "Dời ra sau": "Déplacer après",
+  "Đã ở đầu lưới": "Déjà le premier de la grille",
+  "Đã ở cuối lưới": "Déjà le dernier de la grille",
+  "Đã dời #{0} · thứ tự được lưu lại": "#{0} déplacé · ordre enregistré",
+  "Dời ô cần chọn đúng một máy": "Déplacer une tuile demande un seul téléphone sélectionné",
 };

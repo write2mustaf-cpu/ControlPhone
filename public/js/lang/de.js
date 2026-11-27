@@ -724,4 +724,11 @@ export default {
   "Máy chưa sẵn sàng": "Telefon noch nicht bereit",
   "qua adb": "über adb",
   "{0} máy không nhận được chữ — {1}": "{0} Telefon(e) haben den Text nicht erhalten — {1}",
+  "Thứ tự tự xếp": "Eigene Reihenfolge",
+  "Dời về trước": "Nach vorne verschieben",
+  "Dời ra sau": "Nach hinten verschieben",
+  "Đã ở đầu lưới": "Ist bereits das erste im Raster",
+  "Đã ở cuối lưới": "Ist bereits das letzte im Raster",
+  "Đã dời #{0} · thứ tự được lưu lại": "#{0} verschoben · Reihenfolge gespeichert",
+  "Dời ô cần chọn đúng một máy": "Zum Verschieben genau ein Telefon auswählen",
 };

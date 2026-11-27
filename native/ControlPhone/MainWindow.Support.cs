@@ -140,6 +140,28 @@ public partial class MainWindow
         };
     }
 
+    /// <summary>Dời ô của một máy về trước/sau trong thứ tự tự xếp (dùng menu ô và Ctrl+Shift+←/→).</summary>
+    void MoveDevice(PhoneDevice d, int delta)
+    {
+        var vis = shown.Select(x => x.Id).ToList();
+        int i = vis.IndexOf(d.Id);
+        if (i < 0) return;
+        int j = i + delta;
+        if (j < 0 || j >= vis.Count)
+        {
+            Ui.Toast(T(delta < 0 ? "Đã ở đầu lưới" : "Đã ở cuối lưới"), "");
+            return;
+        }
+        var full = ManualOrder.Normalize(manager.Devices.Where(x => !x.Pending).Select(x => x.Id), Store.Ui.Order);
+        Store.Ui.Order = ManualOrder.MovePast(full, d.Id, vis[j], delta);
+        sort = "manual";
+        Store.Ui.Sort = sort;
+        Store.SaveUi();
+        RenderAll();
+        foreach (ComboBoxItem it in SortSel.Items) if ((string)it.Tag == sort) SortSel.SelectedItem = it;
+        Ui.Toast(T("Đã dời #{0} · thứ tự được lưu lại", d.Num), "ok");
+    }
+
     void RunShortcut(string action)
     {
         var targets = manager.Devices.Where(d => selected.Contains(d.Id)).ToList();
@@ -192,6 +214,13 @@ public partial class MainWindow
             case Shortcuts.AiChat:
                 ShowAiChat();
                 break;
+            case Shortcuts.MoveEarlier:
+            case Shortcuts.MoveLater:
+            {
+                if (targets.Count == 1) MoveDevice(targets[0], action == Shortcuts.MoveEarlier ? -1 : 1);
+                else Ui.Toast(T("Dời ô cần chọn đúng một máy"), "");
+                break;
+            }
             case Shortcuts.Screenshot:
             {
                 var d = targets.FirstOrDefault() ?? manager.Devices.FirstOrDefault(x => x.IsOnline);

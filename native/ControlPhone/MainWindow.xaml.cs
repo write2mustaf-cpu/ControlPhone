@@ -239,6 +239,11 @@ public partial class MainWindow : Window
         var sorter = new DeviceSorter(this);
         var list = manager.Devices.Where(MatchFilter).ToList();
         list.Sort((a, b) => sorter.Compare(a, b));
+        if (sort == "manual")
+        {
+            var byId = list.ToDictionary(d => d.Id);
+            list = ManualOrder.Normalize(list.Select(d => d.Id), Store.Ui.Order).Select(id => byId[id]).ToList();
+        }
         GridOrder.Sync(shown, list);
         selected.RemoveWhere(id => manager.Get(id) is { SoloHidden: true }); // máy bị ẩn không còn nhận thao tác đồng bộ
         foreach (var d in manager.Devices) d.IsSelected = selected.Contains(d.Id);

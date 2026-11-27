@@ -199,6 +199,8 @@ public partial class MainWindow
             null,
             new("Đổi tên…", "type", () => RenameDevice(d)),
             new("Đổi số thứ tự…", "hash", () => RenumberDevice(d)),
+            new(T("Dời về trước"), "left", () => MoveDevice(d, -1)),
+            new(T("Dời ra sau"), "right", () => MoveDevice(d, 1)),
             new(T("Cài đặt hình ảnh riêng…") + (DeviceVideo.HasOverrides(Store.MetaOrNull(d.Id)) ? "  •" : ""), "monitor", () => DlgDeviceVideo(d)),
             new("Thêm vào nhóm…", "tag", () => DlgGroup(one, false)),
             new("Ứng dụng…", "apps", () => DlgApps(one, d.Id)),

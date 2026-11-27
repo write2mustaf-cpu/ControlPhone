@@ -187,6 +187,7 @@ public partial class MainWindow
             if (doc.TileW is double tw) Store.Ui.TileW = Math.Clamp(tw, 110, 520);
             if (!string.IsNullOrEmpty(doc.Sort)) Store.Ui.Sort = doc.Sort;
             if (doc.HideOffline is bool ho) Store.Ui.HideOffline = ho;
+            if (doc.Order is { Count: > 0 } order) Store.Ui.Order = ManualOrder.Normalize(Store.State.Devices.Keys, order);
             SettingsSanitizer.Apply(Store.Ui);
 
             var (devices, groups) = UserBackup.MergeInto(Store.State, doc);
