@@ -210,6 +210,14 @@ the operation log, and keeps your device names and numbers.
 - **Navigation bar visible in games on Android 10** — select the phones → right-click → ADB commands → *Hide 3-button bar for the current app*.
 - **No video in the browser** — use a recent Microsoft Edge or Google Chrome (WebCodecs required).
 
+### Per-phone log
+
+Right-click a phone → *Phone log…* shows that phone's own history: every state change (`offline → connecting → online`,
+`→ error · reason`) and the result of each operation run on it, newest last. *Copy*, *Open file* and *Clear log* work on it,
+and the file lives in `data\logs\devices\<serial>.log` (256 KB, rotated to `.log.1`) so it survives a restart. The AI
+assistant reads the same log with its `device_log` tool — ask it "why does phone #4 keep dropping?" and it can answer from
+the phone's own history instead of guessing.
+
 ### Reporting a problem
 
 *Links & support → Diagnostics bundle → Export…* writes one ZIP you can attach to an email or send in the Telegram group:

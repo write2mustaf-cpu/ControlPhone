@@ -246,6 +246,8 @@ public sealed class Actions
                 }
                 catch (Exception e) { r = (false, e.Message); }
                 finally { lim.Release(); }
+                if (skipped) DeviceLog.Add(d.Id, $"{task.Op}: dừng theo yêu cầu — không chạy", error: false);
+                else DeviceLog.Add(d.Id, $"{task.Op}: {(r.Ok ? "ok" : "lỗi")}{(r.Msg != "" ? " · " + r.Msg.Replace("\n", " ") : "")}", error: !r.Ok);
                 _ = ui.BeginInvoke(() =>
                 {
                     task.Done++;

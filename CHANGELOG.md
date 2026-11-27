@@ -3,6 +3,24 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.7.0 — A separate log for every phone
+
+### Per-phone log (new, requested in the original brief)
+- Right-click a phone → **Phone log…**: its own history — every `Status` transition (`offline → connecting → online`,
+  `→ error · reason`) plus the result of every operation that ran on that phone (`push: lỗi · …`, `apk: ok`), including
+  operations skipped because a batch was stopped.
+- Persisted per phone in `data/logs/devices/<safe-id>.log` (256 KB, rotated to `.log.1`), so the history survives a
+  restart; the in-memory ring keeps the last 300 lines for the dialog. Wi-Fi ids contain `:`, so file names are sanitised
+  (`192.168.1.5:5555` → `192.168.1.5_5555`) and a hostile/empty id becomes `device`.
+- Dialog actions: **Refresh**, **Copy**, **Open file**, **Clear log** (with confirmation, clears memory and files).
+- New AI tool **`device_log`** (`device`, `lines` 1–200): the assistant can read a phone's own history instead of
+  guessing, which is what the "diagnose a phone that keeps dropping" case needed.
+
+### Verification
+- Self-check 164 → **175** checks: entries stay per phone, ordering and error flag, `Format`, file append, 300-line cap,
+  file-name sanitising for Wi-Fi/hostile ids, 256 KB rotation to `.log.1`, and clearing memory + files.
+- CI builds, runs the self-check twice (build + installed copy), builds the installer and uploads both assets.
+
 ## 3.6.0 — Safe mode when startup keeps failing
 
 ### Safe mode (new)

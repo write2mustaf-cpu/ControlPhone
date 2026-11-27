@@ -60,6 +60,59 @@ public partial class MainWindow
         }
     }
 
+    /// <summary>Nhật ký riêng của một máy: trạng thái, lỗi luồng và kết quả thao tác — xem, sao chép, mở tệp, xoá.</summary>
+    void DlgDeviceLog(PhoneDevice d)
+    {
+        var dlg = new Dlg(T("Nhật ký máy #{0} · {1}", d.Num, d.DisplayName), 780);
+        dlg.AddText("Mọi thay đổi trạng thái của máy này và kết quả các thao tác chạy trên nó được ghi riêng ở đây, và trong tệp bên dưới. Trợ lý AI cũng đọc được nhật ký này bằng công cụ device_log.");
+        var path = new TextBlock { Text = DeviceLog.PathFor(d.Id), FontSize = 11.5, TextWrapping = TextWrapping.Wrap };
+        path.SetResourceReference(TextBlock.ForegroundProperty, "Muted");
+        dlg.Body.Children.Add(path);
+
+        var box = new TextBox
+        {
+            IsReadOnly = true,
+            FontFamily = new FontFamily("Consolas"),
+            FontSize = 11.5,
+            Height = 380,
+            TextWrapping = TextWrapping.NoWrap,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+        };
+        void Fill() => box.Text = DeviceLog.Format(d.Id, 200) is { Length: > 0 } t ? t : T("Chưa có ghi nhận nào cho máy này.");
+        Fill();
+        dlg.Body.Children.Add(box);
+
+        dlg.AddAction("Làm mới", "Btn", () => { Fill(); return false; }, "refresh");
+        dlg.AddAction("Sao chép", "Btn", () =>
+        {
+            try { Clipboard.SetText(box.Text); Ui.Toast(T("Đã sao chép nhật ký máy #{0}", d.Num), "ok"); }
+            catch (Exception e) { Ui.Toast(T("Không sao chép được — hãy bôi đen và sao chép thủ công") + ": " + e.Message, "err", 6000); }
+            return false;
+        }, "copy");
+        dlg.AddAction("Mở tệp", "Btn", () =>
+        {
+            try
+            {
+                var p = DeviceLog.PathFor(d.Id);
+                if (!File.Exists(p)) Ui.Toast(T("Chưa có tệp nhật ký cho máy này"), "err");
+                else Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{p}\"") { UseShellExecute = true });
+            }
+            catch (Exception e) { Ui.Toast(e.Message, "err", 6000); }
+            return false;
+        }, "folder");
+        dlg.AddAction("Xoá nhật ký", "Btn", () =>
+        {
+            if (!Ui.Confirm(T("Xoá nhật ký máy #{0}", d.Num), T("Xoá toàn bộ nhật ký của máy này (bộ nhớ và tệp)?"), "Xoá", true)) return false;
+            DeviceLog.Clear(d.Id);
+            DeviceLog.Add(d.Id, "nhật ký đã được xoá");
+            Fill();
+            return false;
+        }, "trash");
+        dlg.AddAction("Đóng", "Primary");
+        dlg.Show();
+    }
+
     /// <summary>Báo cáo kỹ thuật ngắn để người dùng dán vào email/Telegram khi báo lỗi.</summary>
     string ReportText()
     {

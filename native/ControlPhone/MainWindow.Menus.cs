@@ -202,6 +202,7 @@ public partial class MainWindow
             new("Thêm vào nhóm…", "tag", () => DlgGroup(one, false)),
             new("Ứng dụng…", "apps", () => DlgApps(one, d.Id)),
             new("Thông tin", "info", () => DlgInfo(d)),
+            new(T("Nhật ký máy…"), "file", () => DlgDeviceLog(d)),
             new("Xem ảnh chụp màn hình", "camera", () => _ = SaveShot(d, open: true)),
             new("Mở bằng scrcpy gốc", "monitor", () => OpenScrcpy(d)),
             null,

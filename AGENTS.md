@@ -13,6 +13,8 @@ Repository notes for AI agents working on ControlPhone (multi-phone Android cont
       corrections are logged to the operation log. **Add new settings here too**, otherwise a hand-edited file wins.
     - `DeviceVideo.cs` — per-phone grid/viewer resolution, fps, bitrate (null override = global). Used by
       `DeviceManager.ThumbOptions/HqOptions`; read metas with `Store.MetaOrNull` (never `Store.Meta` in hot paths).
+    - `DeviceLog.cs` — per-phone log: 300-line memory ring + `data/logs/devices/<safe-id>.log` (256 KB, `.log.1`
+      rotation); fed by the `PhoneDevice.Status` setter and by `Actions.RunBatch`; exposed to the AI as `device_log`.
     - `SafeMode.cs` — `SessionGuard` (data/logs/session.json: start/ready marks, consecutive-failure counter) and
       `SafeMode` (session-only light profile applied inside `DeviceVideo`, never written to config.json).
     - `Updates.cs` — GitHub `releases/latest` check: `ParseTag`/`IsNewer`/`Parse`/`ShouldNotify` are pure and covered by
@@ -45,7 +47,7 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (164 checks as of 3.6.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (175 checks as of 3.7.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
 ## Gotchas
