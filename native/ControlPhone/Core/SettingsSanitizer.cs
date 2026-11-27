@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 
 namespace ControlPhone.Core;
@@ -63,6 +64,13 @@ public static class SettingsSanitizer
         if (ui.ShellHist == null) ui.ShellHist = [];
         else if (ui.ShellHist.Count > 50) { ui.ShellHist = ui.ShellHist.Take(50).ToList(); fixedUp.Add("ShellHist trimmed"); }
         if (ui.Selected == null) ui.Selected = [];
+        // nhãn thời gian / phiên bản do app ghi: giá trị lạ không được làm hỏng bước kiểm tra cập nhật
+        if (!DateTime.TryParseExact(ui.LastUpdateCheck, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+        {
+            if (ui.LastUpdateCheck != "") fixedUp.Add($"LastUpdateCheck={ui.LastUpdateCheck}→empty");
+            ui.LastUpdateCheck = "";
+        }
+        if (ui.SkipVersion != "" && Updates.ParseTag(ui.SkipVersion) == null) { fixedUp.Add($"SkipVersion={ui.SkipVersion}→empty"); ui.SkipVersion = ""; }
         return fixedUp;
     }
 

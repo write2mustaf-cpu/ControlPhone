@@ -110,6 +110,15 @@ public partial class MainWindow
         all.Margin = new Thickness(0, 0, 0, 8);
         d.Body.Children.Add(all);
 
+        Card("Cập nhật", "Kiểm tra bản phát hành mới trên GitHub — ứng dụng không tự tải hay tự cài.", "v" + Updates.Current.ToString(3),
+        [
+            ("Kiểm tra ngay", "refresh", () => _ = CheckUpdates(manual: true)),
+            ("Mở trang phát hành", "link", () => OpenLink(Updates.RepoUrl + "/releases")),
+        ]);
+        var chk = d.AddCheck("Tự kiểm tra cập nhật khi khởi động (tối đa 1 lần/24 giờ)", Store.Ui.CheckUpdates);
+        chk.Checked += (_, _) => { Store.Ui.CheckUpdates = true; Store.SaveUi(); };
+        chk.Unchecked += (_, _) => { Store.Ui.CheckUpdates = false; Store.SaveUi(); };
+
         Card("Báo lỗi kỹ thuật", "Khi cần hỗ trợ, gửi kèm thông tin chẩn đoán và tệp nhật ký lỗi — chúng không chứa khoá API.", Crash.LogPath,
         [
             ("Mở thư mục nhật ký", "folder", () => Crash.OpenLogFolder()),

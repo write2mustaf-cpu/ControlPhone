@@ -106,6 +106,12 @@ Docs: [Windows install](docs/WINDOWS-INSTALL.md) · [AI providers & assistant](d
 - **OTG** — launches `scrcpy --otg` (keyboard/mouse over USB without USB debugging).
 - Native scrcpy window for any phone as a fallback.
 
+**Updates (ControlPhone 3.3+)**
+- *⋯ → Check for updates…* asks GitHub for the newest release and shows what changed, the asset sizes and two buttons:
+  open the release page or download the installer. Nothing is downloaded or installed behind your back.
+- The check runs by itself at most once per 24 hours (can be switched off in *Links & support*), and *Skip this version*
+  keeps it quiet until the next release.
+
 ## 📥 Install
 
 ### Option 1 — Windows installer (recommended)

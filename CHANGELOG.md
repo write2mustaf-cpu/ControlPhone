@@ -3,6 +3,29 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.3.0 — Update check, and repo notes for future work
+
+### Update check (new)
+- *⋯ → Check for updates…* reads `releases/latest` from the project's GitHub API, compares it with the running version
+  and shows the release notes, the asset sizes and two working buttons: **Open release page** and **Download installer**.
+- Nothing is downloaded or installed by the app: both buttons open the browser, and the dialog says so.
+- Automatic check at most once per 24 hours (timestamp in `ui.json`), can be switched off with a checkbox in
+  *Links & support*; *Skip this version* keeps a release quiet until the next one. Both preferences are validated by
+  `SettingsSanitizer`, so a hand-edited `ui.json` cannot mute or spam the check.
+- Failures are reported, not swallowed: HTTP errors, timeouts, unreadable JSON and a missing numeric tag all end in a
+  toast (manual check) or one operation-log line (automatic check). Drafts and pre-releases are never offered.
+- Version comparison is numeric (`3.10.0 > 3.9.0`, `4.0 > 3.99.99`), not string-based.
+
+### Repository notes
+- `AGENTS.md` now documents `Crash`, `SettingsSanitizer`, `DeviceVideo` and `Updates`, the rule that new settings must be
+  added to the sanitizer, `Store.MetaOrNull` in hot paths, and the expectation that every pure helper gets a self-check.
+- README and the Arabic guide describe the update flow.
+
+### Verification
+- Self-check 108 → **130** checks: tag parsing (including pre-release rejection), numeric version comparison, release JSON
+  parsing with assets, draft/pre-release rejection, broken responses, skip logic, and the new preference validation.
+- CI builds, runs the self-check twice (build + installed copy) and uploads the installer and ZIP.
+
 ## 3.2.0 — Per-phone video settings, settings that cannot break the app
 
 ### Per-phone video settings (new)
