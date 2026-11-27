@@ -1,4 +1,4 @@
-# Windows installation and first run (ControlPhone 3.0)
+# Windows installation and first run (ControlPhone 3.0.1)
 
 ## What you need
 
@@ -9,9 +9,30 @@
 Nothing else: the release package is **self-contained** (the .NET runtime, adb, FFmpeg and scrcpy-server are
 included). You do not install .NET, Node.js, adb or scrcpy separately.
 
+## Install (Windows installer, recommended)
+
+1. Download `ControlPhone-Setup-v3.0.1-win64.exe` from the [Releases](../../releases) page.
+2. Run it. No administrator rights are needed: it installs for the current Windows account into
+   `%LOCALAPPDATA%\Programs\ControlPhone`.
+3. The wizard speaks English and Arabic (right-to-left). Accept the MIT licence, pick a folder if you want a different
+   one, and finish. Leave *Launch ControlPhone* ticked to start it right away.
+4. Uninstall later from *Settings → Apps → Installed apps → ControlPhone* (or the Start Menu shortcut).
+   **Your `data\` folder is kept** — phone numbers, names, groups, settings, AI providers and chats survive an
+   uninstall or an upgrade. Only `logs\` is removed.
+
+Unattended install (a lab or a farm of PCs):
+
+```bat
+ControlPhone-Setup-v3.0.1-win64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR="D:\Tools\ControlPhone" /LOG="%TEMP%\cp-setup.log"
+ControlPhone-Setup-v3.0.1-win64.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART     :: upgrade an existing install
+"%LOCALAPPDATA%\Programs\ControlPhone\unins000.exe" /VERYSILENT                  :: uninstall
+```
+
+The installer and the portable ZIP contain exactly the same application files; pick one.
+
 ## Install (portable ZIP)
 
-1. Download `ControlPhone-v3.0.0-win64.zip` from the [Releases](../../releases) page.
+1. Download `ControlPhone-v3.0.1-win64.zip` from the [Releases](../../releases) page.
 2. Extract it to a folder you can write to (for example `C:\ControlPhone`). Do **not** run it from inside the ZIP.
 3. Start `ControlPhone.exe`.
 4. Choose the mode:
