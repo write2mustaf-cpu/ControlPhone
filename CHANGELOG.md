@@ -3,6 +3,31 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.15.0 — The first published package (Scoop bucket + winget manifests)
+
+### The gap
+Every release was three loose files. Nothing a package manager could install, and no way to keep a manifest's version and
+SHA-256 honest: typed by hand, one of them drifts and `scoop install` fails with a hash mismatch that looks like a corrupt
+download.
+
+### What was added
+- `tools/package_manifests.py` — generates the winget manifest set (version / installer / en-US locale) and a Scoop
+  manifest from the built artefacts. It hashes the files itself, refuses missing, empty or renamed artefacts (a renamed
+  copy would publish a dead URL), writes the version into every file, then re-reads its own output to verify version,
+  hash, installer type and that Scoop still persists `data\`. It also emits `manifests.json` (name, bytes, hash, URL).
+- CI runs it right after building the installer and attaches `ControlPhone-v<version>-manifests.zip` to the release, so
+  the manifests always describe the files shipped next to them.
+- **Scoop bucket published**: `scoop bucket add controlphone https://github.com/write2mustaf-cpu/scoop-controlphone` then
+  `scoop install controlphone`. The manifest installs the portable build, adds a `controlphone` shim and a Start-menu
+  shortcut, and persists `data\` so `scoop update` keeps config, device logs and chat history.
+- `docs/PACKAGES.md` (+ Arabic): install commands, how to submit the winget manifests, why they are generated, and what CI
+  does **not** verify.
+
+### Verification
+- Manifests generated from the real 3.14.0 assets, then checked against the live release: both URLs return HTTP 200, both
+  sizes match, and the SHA-256 computed from the downloaded bytes equals the hash written into the manifest.
+- Self-check unchanged at 275 (no app code touched); the packaging script verifies its own output on every run.
+
 ## 3.14.0 — Bulk typing joins the batch engine
 
 ### The gap

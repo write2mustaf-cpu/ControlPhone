@@ -123,12 +123,22 @@ failed phones* never picks up the stopped ones.
    uninstaller entry. The wizard is English **and Arabic (RTL)**. Your `data\` folder is kept on upgrade and uninstall.
 3. Silent deployment: `ControlPhone-Setup-vX.Y.Z-win64.exe /VERYSILENT /DIR="D:\Tools\ControlPhone"`.
 
-### Option 2 — Portable ZIP (nothing else to install)
+### Option 2 — Package manager
+```powershell
+scoop bucket add controlphone https://github.com/write2mustaf-cpu/scoop-controlphone
+scoop install controlphone
+```
+Scoop installs the portable build, puts `controlphone` on your `PATH`, and persists `data\` so `scoop update` keeps your
+settings, logs and chat history. A winget manifest is attached to every release and ready to submit — see
+[docs/PACKAGES.md](docs/PACKAGES.md) for the details, including how the version and SHA-256 are generated from the real
+files instead of typed by hand.
+
+### Option 3 — Portable ZIP (nothing else to install)
 1. Download `ControlPhone-vX.Y.Z-win64.zip` from [Releases](https://github.com/write2mustaf-cpu/ControlPhone/releases).
 2. Extract it to a folder you can write to and start **`ControlPhone.exe`**.
 3. Nothing else is needed: the .NET runtime, adb, FFmpeg and scrcpy-server are inside.
 
-### Option 3 — Build from source (native app)
+### Option 4 — Build from source (native app)
 Requirements: Windows 10/11 x64, [.NET 9 SDK](https://dotnet.microsoft.com/download), [Node.js 18+](https://nodejs.org).
 ```bash
 git clone https://github.com/write2mustaf-cpu/ControlPhone.git
@@ -141,7 +151,7 @@ dist\ControlPhone\ControlPhone.exe
 `ControlPhone.exe --selfcheck` runs the built-in verification (translations/RTL, key encryption, AI protocols,
 tool registry, support data) without any phone attached.
 
-### Option 4 — Legacy web build (1.x)
+### Option 5 — Legacy web build (1.x)
 The original browser version is still in this repository for reference (`npm start`, `ControlPhone.bat`). It has the
 same phone control features but runs in a browser window through a local Node server; the native app (3.x) replaces it
 and adds the AI assistant, the Arabic interface and multi-provider support.
