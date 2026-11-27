@@ -265,6 +265,7 @@ public static class AiProvidersDialog
         var approval = d.AddCheck("Hỏi tôi trước các thao tác nhạy cảm (cài đặt, gỡ, shell, gửi văn bản…)", s.RequireApproval);
         var details = d.AddCheck("Hiện chi tiết kết quả công cụ trong hội thoại", s.ShowToolDetails);
         var plan = d.AddCheck("Hiện kế hoạch thao tác trước khi thực hiện", s.ShowPlan);
+        var stream = d.AddCheck("Hiện câu trả lời dần dần (streaming) khi nhà cung cấp hỗ trợ", s.Stream);
         var extra = d.AddInput("Hướng dẫn thêm cho trợ lý (tuỳ chọn)", s.ExtraSystemPrompt, "vd. Luôn trả lời bằng tiếng Việt, nêu rõ số máy");
         extra.AcceptsReturn = true;
         extra.TextWrapping = TextWrapping.Wrap;
@@ -277,6 +278,7 @@ public static class AiProvidersDialog
             s.RequireApproval = approval.IsChecked == true;
             s.ShowToolDetails = details.IsChecked == true;
             s.ShowPlan = plan.IsChecked == true;
+            s.Stream = stream.IsChecked == true;
             s.ExtraSystemPrompt = extra.Text.Trim();
             AiStore.Save();
             Ui.Toast("Đã lưu tuỳ chọn trợ lý", "ok");

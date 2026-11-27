@@ -669,4 +669,13 @@ export default {
   "Xoá nhật ký": "Protokoll löschen",
   "Xoá nhật ký máy #{0}": "Protokoll von Telefon #{0} löschen",
   "Xoá toàn bộ nhật ký của máy này (bộ nhớ và tệp)?": "Das gesamte Protokoll dieses Telefons löschen (Speicher und Datei)?",
+  "Hiện câu trả lời dần dần (streaming) khi nhà cung cấp hỗ trợ": "Antwort beim Schreiben anzeigen (Streaming), wenn der Anbieter es unterstützt",
+  "Hiện chi tiết kết quả công cụ trong hội thoại": "Details der Werkzeugergebnisse im Chat anzeigen",
+  "Hiện kế hoạch thao tác trước khi thực hiện": "Aktionsplan vor der Ausführung anzeigen",
+  "Hỏi tôi trước các thao tác nhạy cảm (cài đặt, gỡ, shell, gửi văn bản…)": "Vor heiklen Aktionen fragen (installieren, deinstallieren, Shell, Text senden…)",
+  "Số bước công cụ tối đa cho mỗi yêu cầu": "Maximale Werkzeugschritte pro Anfrage",
+  "Tuỳ chọn trợ lý": "Assistent-Optionen",
+  "Hướng dẫn thêm cho trợ lý (tuỳ chọn)": "Zusätzliche Anweisungen für den Assistenten (optional)",
+  "Các tuỳ chọn này áp dụng cho mọi hội thoại. Khoá API không lưu ở đây — xem danh sách nhà cung cấp.": "Diese Optionen gelten für alle Unterhaltungen. API-Schlüssel werden hier nicht gespeichert — siehe Anbieterliste.",
+  "Đã lưu tuỳ chọn trợ lý": "Assistent-Optionen gespeichert",
 };

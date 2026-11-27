@@ -669,4 +669,13 @@ export default {
   "Xoá nhật ký": "Effacer le journal",
   "Xoá nhật ký máy #{0}": "Effacer le journal du téléphone #{0}",
   "Xoá toàn bộ nhật ký của máy này (bộ nhớ và tệp)?": "Supprimer tout le journal de ce téléphone (mémoire et fichier) ?",
+  "Hiện câu trả lời dần dần (streaming) khi nhà cung cấp hỗ trợ": "Afficher la réponse au fur et à mesure (streaming) si le fournisseur le permet",
+  "Hiện chi tiết kết quả công cụ trong hội thoại": "Afficher le détail des résultats d'outils dans la conversation",
+  "Hiện kế hoạch thao tác trước khi thực hiện": "Afficher le plan d'action avant exécution",
+  "Hỏi tôi trước các thao tác nhạy cảm (cài đặt, gỡ, shell, gửi văn bản…)": "Me demander avant les actions sensibles (installer, désinstaller, shell, envoyer du texte…)",
+  "Số bước công cụ tối đa cho mỗi yêu cầu": "Nombre maximal d'étapes d'outils par demande",
+  "Tuỳ chọn trợ lý": "Options de l'assistant",
+  "Hướng dẫn thêm cho trợ lý (tuỳ chọn)": "Instructions supplémentaires pour l'assistant (facultatif)",
+  "Các tuỳ chọn này áp dụng cho mọi hội thoại. Khoá API không lưu ở đây — xem danh sách nhà cung cấp.": "Ces options s'appliquent à toutes les conversations. Les clés API ne sont pas stockées ici — voir la liste des fournisseurs.",
+  "Đã lưu tuỳ chọn trợ lý": "Options de l'assistant enregistrées",
 };

@@ -17,6 +17,8 @@ public sealed class AiSettings
     /// <summary>Hướng dẫn thêm của người dùng, ghép vào lời nhắc hệ thống.</summary>
     public string ExtraSystemPrompt { get; set; } = "";
     public bool ShowPlan { get; set; } = true;
+    /// <summary>Hiện câu trả lời dần dần khi nhà cung cấp hỗ trợ phát trực tiếp (tự quay lại cách thường nếu lỗi).</summary>
+    public bool Stream { get; set; } = true;
 }
 
 public sealed class AiChatMeta

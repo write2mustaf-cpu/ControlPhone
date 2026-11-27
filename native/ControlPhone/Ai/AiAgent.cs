@@ -2,7 +2,7 @@ using System.Text;
 
 namespace ControlPhone.Ai;
 
-public enum AiEventKind { Status, AssistantText, ToolStart, ToolEnd, Error, Stopped, Usage }
+public enum AiEventKind { Status, AssistantDelta, AssistantText, ToolStart, ToolEnd, Error, Stopped, Usage }
 
 public sealed record AiEvent(AiEventKind Kind, string Text, AiToolCall? Call = null, AiToolResult? Result = null, bool? Ok = null);
 
@@ -47,7 +47,12 @@ public sealed class AiAgent(AiToolHost tools)
             Emit(new AiEvent(AiEventKind.Status, round == 0 ? "thinking" : "continuing"));
 
             var history = BuildHistory(chat, provider);
-            var reply = await AiClient.ChatAsync(provider, apiKey, history, specs, ct).ConfigureAwait(false);
+            // Phát trực tiếp chỉ để hiện chữ dần dần; nếu nhà cung cấp không hỗ trợ (null) thì gọi cách thường.
+            AiReply? streamed = null;
+            if (settings.Stream)
+                streamed = await AiClient.ChatStreamAsync(provider, apiKey, history, specs,
+                    d => Emit(new AiEvent(AiEventKind.AssistantDelta, d)), ct).ConfigureAwait(false);
+            var reply = streamed ?? await AiClient.ChatAsync(provider, apiKey, history, specs, ct).ConfigureAwait(false);
             usage += reply.Usage;
 
             if (!reply.Ok)

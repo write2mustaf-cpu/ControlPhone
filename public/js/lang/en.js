@@ -770,4 +770,5 @@ export default {
   "Xoá nhật ký": "Clear log",
   "Xoá nhật ký máy #{0}": "Clear the log of phone #{0}",
   "Xoá toàn bộ nhật ký của máy này (bộ nhớ và tệp)?": "Delete this phone's whole log (memory and file)?",
+  "Hiện câu trả lời dần dần (streaming) khi nhà cung cấp hỗ trợ": "Show the answer as it is written (streaming) when the provider supports it",
 };
