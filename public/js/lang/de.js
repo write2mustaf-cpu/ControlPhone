@@ -657,4 +657,6 @@ export default {
   "Mở thư mục log": "Protokollordner öffnen",
   "Đã lưu gói chẩn đoán: {0}": "Diagnosepaket gespeichert: {0}",
   "Không xuất được gói chẩn đoán: {0}": "Diagnosepaket konnte nicht exportiert werden: {0}",
+  "Đang chạy ở chế độ an toàn: hình ảnh nhẹ, không ưu tiên giải mã phần cứng. Cài đặt của bạn không bị thay đổi.": "Sicherer Modus aktiv: leichtes Videoprofil, keine Hardware-Decoder-Bevorzugung. Ihre Einstellungen bleiben unverändert.",
+  "Chế độ an toàn đang bật: hình ảnh nhẹ và không ưu tiên giải mã phần cứng, vì {0} lần khởi động trước không hoàn tất. Đóng ứng dụng rồi mở lại là trở về bình thường.": "Sicherer Modus aktiv: leichtes Video und keine Hardware-Decoder-Bevorzugung, weil {0} vorherige Starts nicht abgeschlossen wurden. App schließen und neu öffnen, um normal weiterzuarbeiten.",
 };

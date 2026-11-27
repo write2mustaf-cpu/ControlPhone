@@ -41,6 +41,16 @@ public partial class App : Application
         System.Runtime.GCSettings.LatencyMode = System.Runtime.GCLatencyMode.SustainedLowLatency;
         OfferPreviousData();
         Store.Load();
+        // khởi động hỏng liên tiếp (chết trước khi cửa sổ sẵn sàng) → chế độ an toàn cho phiên này
+        if (!SelfTest.On)
+        {
+            try
+            {
+                var fails = SessionGuard.Begin();
+                if (SessionGuard.ShouldUseSafeMode(fails)) SafeMode.Activate(fails);
+            }
+            catch (Exception ex) { OpLog.Add("SessionGuard: " + ex.Message, error: true); }
+        }
         I18n.Init(Store.Ui.Lang);
         Theme.Apply(Store.Ui.Theme);
         base.OnStartup(e);
@@ -92,6 +102,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        if (!SelfTest.On) SessionGuard.Clean();
         Store.Flush();
         Store.FlushUi();
         try { single?.ReleaseMutex(); } catch { }

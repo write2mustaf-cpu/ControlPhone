@@ -657,4 +657,6 @@ export default {
   "Mở thư mục log": "打开日志文件夹",
   "Đã lưu gói chẩn đoán: {0}": "诊断包已保存：{0}",
   "Không xuất được gói chẩn đoán: {0}": "无法导出诊断包：{0}",
+  "Đang chạy ở chế độ an toàn: hình ảnh nhẹ, không ưu tiên giải mã phần cứng. Cài đặt của bạn không bị thay đổi.": "正在安全模式下运行：轻量视频配置，不优先使用硬件解码。您的设置未被修改。",
+  "Chế độ an toàn đang bật: hình ảnh nhẹ và không ưu tiên giải mã phần cứng, vì {0} lần khởi động trước không hoàn tất. Đóng ứng dụng rồi mở lại là trở về bình thường.": "安全模式已开启：轻量视频且不优先硬件解码，因为前 {0} 次启动未完成。关闭并重新打开应用即可恢复正常。",
 };
