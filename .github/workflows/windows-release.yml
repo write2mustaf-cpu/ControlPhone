@@ -1,8 +1,9 @@
 name: Windows build & release
 
 # Bản Windows thật (self-contained, không cần cài .NET) được dựng trên Windows của GitHub:
-# mỗi lần push vào main / PR → dựng + chạy tự kiểm tra (ControlPhone.exe --selfcheck) + lưu ZIP.
-# Khi push tag v*.*.* → tạo GitHub Release và đính kèm ZIP.
+# mỗi lần push vào main / PR → dựng + chạy tự kiểm tra (ControlPhone.exe --selfcheck) + lưu ZIP
+#   + dựng bộ cài Inno Setup và cài thử im lặng rồi chạy lại selfcheck từ bản đã cài.
+# Khi push tag v*.*.* → tạo GitHub Release và đính kèm ZIP + bộ cài.
 
 on:
   push:
@@ -42,6 +43,7 @@ jobs:
           $v = (Select-String -Path native/ControlPhone/ControlPhone.csproj -Pattern '<Version>([^<]+)</Version>').Matches[0].Groups[1].Value
           "version=$v" >> $env:GITHUB_OUTPUT
           "zip=ControlPhone-v$v-win64" >> $env:GITHUB_OUTPUT
+          "setup=ControlPhone-Setup-v$v-win64" >> $env:GITHUB_OUTPUT
 
       - name: Publish self-contained win-x64
         run: >
@@ -79,11 +81,54 @@ jobs:
           $size = [math]::Round((Get-Item "dist/$name.zip").Length / 1MB, 1)
           Write-Host "$name.zip = $size MB"
 
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { throw "ISCC.exe not found" }
+
+      - name: Build Windows installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & $iscc "/DAppVersion=${{ steps.ver.outputs.version }}" "packaging\ControlPhone.iss"
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed ($LASTEXITCODE)" }
+          $setup = Get-ChildItem "dist/${{ steps.ver.outputs.setup }}.exe"
+          Write-Host ("{0} = {1} MB" -f $setup.Name, [math]::Round($setup.Length / 1MB, 1))
+
+      - name: Installer smoke test (silent install -> selfcheck -> uninstall)
+        shell: pwsh
+        run: |
+          $setup = (Get-Item "dist/${{ steps.ver.outputs.setup }}.exe").FullName
+          $dir = Join-Path $env:RUNNER_TEMP 'cp-install'
+          $log = Join-Path $env:RUNNER_TEMP 'cp-install.log'
+          Start-Process -FilePath $setup -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/DIR=$dir","/LOG=$log" -Wait
+          if (-not (Test-Path (Join-Path $dir 'ControlPhone.exe'))) {
+            if (Test-Path $log) { Get-Content $log -Tail 40 }
+            throw "installer did not place ControlPhone.exe in $dir"
+          }
+          foreach ($f in 'lang\ar.js','scrcpy\adb.exe','scrcpy\scrcpy-server','docs\AI-ASSISTANT.md') {
+            if (-not (Test-Path (Join-Path $dir $f))) { throw "installed copy is missing $f" }
+          }
+          Write-Host "installed files present"
+          $p = Start-Process -FilePath (Join-Path $dir 'ControlPhone.exe') -ArgumentList '--selfcheck' -NoNewWindow -Wait -PassThru
+          $sclog = Join-Path $env:TEMP 'controlphone-selfcheck.log'
+          if (Test-Path $sclog) { Get-Content $sclog -Encoding utf8 | Select-String 'FAIL|passed,' }
+          if ($p.ExitCode -ne 0) { throw "selfcheck from the installed copy failed ($($p.ExitCode))" }
+          $un = Join-Path $dir 'unins000.exe'
+          if (Test-Path $un) { Start-Process -FilePath $un -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -Wait }
+          Start-Sleep -Seconds 3
+          if (Test-Path (Join-Path $dir 'ControlPhone.exe')) { throw "uninstall left ControlPhone.exe behind" }
+          Write-Host "installer, installed app and uninstaller OK"
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.ver.outputs.zip }}
-          path: dist/${{ steps.ver.outputs.zip }}.zip
+          path: |
+            dist/${{ steps.ver.outputs.zip }}.zip
+            dist/${{ steps.ver.outputs.setup }}.exe
           retention-days: 30
 
       - name: Publish GitHub Release
@@ -94,5 +139,6 @@ jobs:
         run: |
           $tag = '${{ github.ref_name }}'
           $zip = "dist/${{ steps.ver.outputs.zip }}.zip"
+          $setup = "dist/${{ steps.ver.outputs.setup }}.exe"
           $notes = if (Test-Path CHANGELOG.md) { Get-Content CHANGELOG.md -Raw } else { "ControlPhone $tag" }
-          gh release create $tag $zip --title "ControlPhone $tag" --notes $notes --latest
+          gh release create $tag $zip $setup --title "ControlPhone $tag" --notes $notes --latest

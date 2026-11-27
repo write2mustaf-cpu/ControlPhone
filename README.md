@@ -104,23 +104,34 @@ Docs: [Windows install](docs/WINDOWS-INSTALL.md) · [AI providers & assistant](d
 
 ## 📥 Install
 
-### Option 1 — Release ZIP (recommended, nothing else to install)
-1. Download `ControlPhone-vX.Y.Z-win64.zip` from [Releases](https://github.com/mahiepit/ControlPhone/releases).
-2. Extract it anywhere.
-3. Double-click **`ControlPhone.bat`**.
+### Option 1 — Windows installer (recommended)
+1. Download `ControlPhone-Setup-vX.Y.Z-win64.exe` from [Releases](https://github.com/write2mustaf-cpu/ControlPhone/releases) and run it.
+2. No administrator rights: it installs for your Windows account, creates Start Menu shortcuts (app + guides) and an
+   uninstaller entry. The wizard is English **and Arabic (RTL)**. Your `data\` folder is kept on upgrade and uninstall.
+3. Silent deployment: `ControlPhone-Setup-vX.Y.Z-win64.exe /VERYSILENT /DIR="D:\Tools\ControlPhone"`.
 
-The ZIP already contains a portable Node.js and the official scrcpy binaries.
+### Option 2 — Portable ZIP (nothing else to install)
+1. Download `ControlPhone-vX.Y.Z-win64.zip` from [Releases](https://github.com/write2mustaf-cpu/ControlPhone/releases).
+2. Extract it to a folder you can write to and start **`ControlPhone.exe`**.
+3. Nothing else is needed: the .NET runtime, adb, FFmpeg and scrcpy-server are inside.
 
-### Option 2 — From source
-Requirements: Windows 10/11, [Node.js 18+](https://nodejs.org), Microsoft Edge or Google Chrome.
+### Option 3 — Build from source (native app)
+Requirements: Windows 10/11 x64, [.NET 9 SDK](https://dotnet.microsoft.com/download), [Node.js 18+](https://nodejs.org).
 ```bash
-git clone https://github.com/mahiepit/ControlPhone.git
+git clone https://github.com/write2mustaf-cpu/ControlPhone.git
 cd ControlPhone
 npm install
-npm run setup
-npm start
+npm run setup          # downloads scrcpy 5.0 from the official release and verifies its SHA-256
+dotnet publish native/ControlPhone/ControlPhone.csproj -c Release -r win-x64 --self-contained true -o dist/ControlPhone
+dist\ControlPhone\ControlPhone.exe
 ```
-`npm run setup` downloads scrcpy v5.0 from the official GitHub release and verifies its SHA-256. `ControlPhone.bat` does all of this automatically.
+`ControlPhone.exe --selfcheck` runs the built-in verification (translations/RTL, key encryption, AI protocols,
+tool registry, support data) without any phone attached.
+
+### Option 4 — Legacy web build (1.x)
+The original browser version is still in this repository for reference (`npm start`, `ControlPhone.bat`). It has the
+same phone control features but runs in a browser window through a local Node server; the native app (3.x) replaces it
+and adds the AI assistant, the Arabic interface and multi-provider support.
 
 ### On each phone
 Android 5.0 or newer (the minimum of scrcpy-server 5.0).

@@ -3,6 +3,25 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.0.1 — Windows installer
+
+### Installer (new)
+- Real Windows installer built with Inno Setup 6 (`packaging/ControlPhone.iss`): per-user install into
+  `%LOCALAPPDATA%\Programs\ControlPhone`, no administrator rights needed, upgrade-in-place, Start Menu group with
+  the two guides, optional desktop shortcut, optional "launch after install", proper uninstaller entry in
+  *Apps & features*.
+- The setup wizard is bilingual (English + Arabic with right-to-left layout) and accepts `/VERYSILENT`,
+  `/DIR=`, `/LOG=` for unattended deployment on a farm of PCs.
+- Your data survives uninstall and upgrade: `data\` (phone numbers, names, groups, settings, AI providers and chats)
+  is never deleted by the uninstaller; only `logs\` is cleaned.
+- The release now ships two files: `ControlPhone-Setup-v3.0.1-win64.exe` (installer) and
+  `ControlPhone-v3.0.1-win64.zip` (portable, unchanged layout).
+
+### Verification (GitHub Actions, windows-latest)
+- The installer is built in CI, then installed silently into a clean folder, the installed copy is checked for
+  `ControlPhone.exe`, `lang\ar.js`, `scrcpy\adb.exe`, `scrcpy\scrcpy-server` and `docs\AI-ASSISTANT.md`,
+  `--selfcheck` is run **from the installed location**, and the uninstaller is run and verified to remove the app.
+
 ## 3.0.0 — Windows Edition with Arabic UI and multi-provider AI
 
 ### Arabic interface and full RTL (new)
