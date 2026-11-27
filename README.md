@@ -87,7 +87,10 @@ Docs: [Windows install](docs/WINDOWS-INSTALL.md) · [AI providers & assistant](d
 6. Open network settings
 7. Open Settings
 
-**Batch tools (for all selected phones)**
+**Batch tools (for all selected phones)** — every batch shows a progress card; the ⏹ button on the card (or *Stop* in the
+results window) stops it: phones still in the queue are skipped and marked as stopped, the phone currently being worked on
+finishes its current command. Results keep the three counts separately (✓ done, ✗ failed, ⏸ stopped), and *select the
+failed phones* never picks up the stopped ones.
 - Back / Home / Recents / Power / Volume / unlock / screen off-on
 - Send text, paste, open URL, launch / stop / clear / uninstall apps
 - Install APK (or drag & drop `.apk` files onto the window), push files, file browser (download / upload / delete)

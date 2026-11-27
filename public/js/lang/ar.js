@@ -749,4 +749,7 @@ export default {
   "Kiểm tra bản phát hành mới trên GitHub — ứng dụng không tự tải hay tự cài.": "تحقّق من إصدار أحدث على GitHub — التطبيق لا ينزّل أو يثبّت شيئاً تلقائياً.",
   "Kiểm tra ngay": "التحقق الآن",
   "Tự kiểm tra cập nhật khi khởi động (tối đa 1 lần/24 giờ)": "التحقق من التحديثات عند بدء التشغيل (مرة واحدة كل 24 ساعة كحد أقصى)",
+  "Đang dừng…": "جارٍ الإيقاف…",
+  "Đã dừng theo yêu cầu": "أُوقفت بناءً على طلبك",
+  "Dừng thao tác này (các máy còn trong hàng đợi sẽ không chạy)": "إيقاف هذه العملية (الهواتف المتبقية في قائمة الانتظار لن تُنفَّذ)",
 };

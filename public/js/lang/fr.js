@@ -648,4 +648,7 @@ export default {
   "Kiểm tra bản phát hành mới trên GitHub — ứng dụng không tự tải hay tự cài.": "Vérifier sur GitHub s'il existe une version plus récente — l'application ne télécharge ni n'installe rien d'elle-même.",
   "Kiểm tra ngay": "Vérifier maintenant",
   "Tự kiểm tra cập nhật khi khởi động (tối đa 1 lần/24 giờ)": "Rechercher des mises à jour au démarrage (au plus une fois par 24 heures)",
+  "Đang dừng…": "Arrêt en cours…",
+  "Đã dừng theo yêu cầu": "Arrêté sur demande",
+  "Dừng thao tác này (các máy còn trong hàng đợi sẽ không chạy)": "Arrêter cette opération (les téléphones encore en file ne seront pas traités)",
 };

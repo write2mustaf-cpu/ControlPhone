@@ -71,7 +71,13 @@ public partial class MainWindow
         var title = new TextBlock { FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis, Name = "tt" };
         var close = new Button { Content = Icons.Get("x"), FontSize = 10, Width = 22, Height = 20, MinHeight = 18, Padding = new Thickness(0) };
         close.SetResourceReference(StyleProperty, "IconGhost");
-        var head = new DockPanel(); DockPanel.SetDock(close, Dock.Right); head.Children.Add(close); head.Children.Add(title);
+        var stop = new Button { Content = Icons.Get("stop"), Name = "stop", FontSize = 10, Width = 22, Height = 20, MinHeight = 18, Padding = new Thickness(0), Visibility = Visibility.Collapsed };
+        stop.SetResourceReference(StyleProperty, "IconGhost");
+        stop.ToolTip = T("Dừng thao tác này (các máy còn trong hàng đợi sẽ không chạy)");
+        var head = new DockPanel();
+        DockPanel.SetDock(close, Dock.Right); head.Children.Add(close);
+        DockPanel.SetDock(stop, Dock.Right); head.Children.Add(stop);
+        head.Children.Add(title);
         var bar = new ProgressBar { Margin = new Thickness(0, 6, 0, 6), Maximum = 100 };
         var info = new TextBlock { FontSize = 11.5 };
         var sp = new StackPanel(); sp.Children.Add(head); sp.Children.Add(bar); sp.Children.Add(info);
@@ -80,6 +86,7 @@ public partial class MainWindow
         card.SetResourceReference(Border.BorderBrushProperty, "Line");
         card.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 12, ShadowDepth = 2, Opacity = 0.3 };
         close.Click += (_, e) => { e.Handled = true; TaskList.Items.Remove(card); taskCards.Remove(task.Id); };
+        stop.Click += (_, e) => { e.Handled = true; task.Stop(); UpdateTaskCard(card, task); };
         card.MouseLeftButtonUp += (_, e) => { if (e.OriginalSource is DependencyObject o && FindParent<Button>(o) == null) ShowTaskResults(task); };
         return card;
     }
@@ -93,23 +100,29 @@ public partial class MainWindow
     void UpdateTaskCard(Border card, BatchTask task)
     {
         var sp = (StackPanel)card.Child;
-        ((TextBlock)((DockPanel)sp.Children[0]).Children[1]).Text = task.Title;
+        var head = (DockPanel)sp.Children[0];
+        ((TextBlock)head.Children[head.Children.Count - 1]).Text = task.Title;
+        if (head.Children.OfType<Button>().FirstOrDefault(b => b.Name == "stop") is { } stop)
+            stop.Visibility = task.CanStop ? Visibility.Visible : Visibility.Collapsed;
         ((ProgressBar)sp.Children[1]).Value = task.Progress;
         var info = (TextBlock)sp.Children[2];
         info.Inlines.Clear();
         info.Inlines.Add(new System.Windows.Documents.Run($"{task.Done}/{task.Total}   ") { Foreground = Theme.Brush("Muted") });
         info.Inlines.Add(new System.Windows.Documents.Run($"✓ {task.OkCount}   ") { Foreground = Theme.Brush("Ok") });
         if (task.Fail > 0) info.Inlines.Add(new System.Windows.Documents.Run($"✗ {task.Fail}   ") { Foreground = Theme.Brush("Bad") });
+        if (task.Skipped > 0) info.Inlines.Add(new System.Windows.Documents.Run($"⏸ {task.Skipped}   ") { Foreground = Theme.Brush("Muted") });
         info.Inlines.Add(new System.Windows.Documents.Run(task.StatusText) { Foreground = Theme.Brush("Muted") });
         card.SetResourceReference(Border.BorderBrushProperty, task.Finished ? (task.Fail > 0 ? "Bad" : "Ok") : "Line");
     }
 
     void ShowTaskResults(BatchTask task)
     {
-        var res = task.Results.OrderBy(r => r.Ok).ThenBy(r => r.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+        var res = task.Results.OrderBy(r => r.Skipped ? 2 : r.Ok ? 1 : 0).ThenBy(r => r.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
         var d = new Dlg(T("{0} — {1}/{2} thành công", task.Title, task.OkCount, task.Total), 800);
         if (res.Count == 0) d.AddText("Không có máy nào.");
-        foreach (var r in res) d.Body.Children.Add(ResultRow(r.Ok, r.Name, r.Msg != "" ? I18n.T(r.Msg) : I18n.T(r.Ok ? "OK" : "Lỗi")));
+        foreach (var r in res) d.Body.Children.Add(ResultRow(r.Ok, r.Name, r.Skipped ? I18n.T("Đã dừng theo yêu cầu") : r.Msg != "" ? I18n.T(r.Msg) : I18n.T(r.Ok ? "OK" : "Lỗi"), r.Skipped));
+        if (!task.Finished)
+            d.AddAction("Dừng", "Btn", () => { task.Stop(); return false; }, "stop");
         if (task.Op == "screenshot")
             d.AddAction("Mở thư mục ảnh", "Btn", () =>
             {
@@ -121,7 +134,7 @@ public partial class MainWindow
             d.AddAction("Chọn các máy lỗi", "Btn", () =>
             {
                 selected.Clear();
-                foreach (var r in task.Results.Where(x => !x.Ok)) selected.Add(r.Id);
+                foreach (var r in task.Results.Where(x => !x.Ok && !x.Skipped)) selected.Add(r.Id);
                 RefreshSelection();
                 return true;
             });

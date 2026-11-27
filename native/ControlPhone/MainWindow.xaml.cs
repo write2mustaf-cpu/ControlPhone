@@ -66,7 +66,7 @@ public partial class MainWindow : Window
         manager.Clipboard += OnPhoneClipboard;
         actions.TaskUpdated += t =>
         {
-            if (t.Finished) OpLog.Add($"{t.Op}: {t.OkCount}/{t.Total} ok, {t.Fail} failed — {t.Title}", t.Fail > 0);
+            if (t.Finished) OpLog.Add($"{t.Op}: {t.OkCount}/{t.Total} ok, {t.Fail} failed{(t.Skipped > 0 ? $", {t.Skipped} stopped" : "")} — {t.Title}", t.Fail > 0);
             OnTask(t);
         };
         refreshTimer.Tick += (_, _) => { refreshTimer.Stop(); using (StallWatch.Op("dựng lại lưới")) RenderAll(); };
