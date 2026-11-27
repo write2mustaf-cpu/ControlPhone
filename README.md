@@ -210,6 +210,16 @@ the operation log, and keeps your device names and numbers.
 - **Navigation bar visible in games on Android 10** — select the phones → right-click → ADB commands → *Hide 3-button bar for the current app*.
 - **No video in the browser** — use a recent Microsoft Edge or Google Chrome (WebCodecs required).
 
+### Typing text into phones
+
+Text goes through the mirror session when one is open — that is the only route that carries Arabic, Vietnamese or
+Chinese, because the session turns the text into a clipboard paste on the phone. When a phone has no open session,
+ControlPhone falls back to `adb shell input text`, which only understands plain ASCII.
+
+The fallback is honest about its limits: ASCII text is delivered, non-ASCII text is refused per phone with the reason
+("needs an open mirror session") instead of being silently dropped. The AI `send_text` tool reports `OK`, `PARTIAL` or
+`FAIL` with a per-phone line, so an assistant answer can never claim it typed Arabic on a phone that never received it.
+
 ### Controlling a running batch
 
 A batch (install, shell, push, screenshot…) no longer has to be all-or-nothing. Its results window lists **every** phone

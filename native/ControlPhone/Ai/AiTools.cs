@@ -101,7 +101,9 @@ public sealed class AiToolHost
             Schema(("devices", "array", DeviceArg, false), ("action", "string", "back|home|recents|power|volumeup|volumedown|unlock|screenoff|screenon|notif|rotate", true)),
             true, (a, ct) => RunBatch("device_action", a, "action", "device action", ct)),
 
-        new("send_text", "Type text into the currently focused field of the phones (any language, emoji). Use paste on the phone side.",
+        new("send_text", "Type text into the currently focused field of the phones. Plain ASCII works over adb; any other " +
+            "language (Arabic, Vietnamese, Chinese…) needs an open mirror session on that phone, otherwise the tool reports " +
+            "which phones could not receive it.",
             Schema(("devices", "array", DeviceArg, false), ("text", "string", "Text to type", true)),
             true, (a, ct) => SendText(a, ct)),
 
@@ -398,7 +400,8 @@ public sealed class AiToolHost
         if (t.Count == 0) return new AiToolResult(false, NoTargets(), "no target");
         var p = new Dictionary<string, object?> { ["text"] = text };
         var res = await host.RunBatchAsync("text", t.Select(x => x.Id).ToList(), p, ct).ConfigureAwait(false);
-        return new AiToolResult(true, res, $"typed text on {Ids(t)}");
+        var ok = res.StartsWith("OK");
+        return new AiToolResult(ok, res, $"typed text on {Ids(t)}");
     }
 
     async Task<AiToolResult> AppControl(JsonObject a, CancellationToken ct)

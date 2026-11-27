@@ -54,7 +54,7 @@ public partial class MainWindow
         {
             if (tb.Text == "") return false;
             var t = SelOnline();
-            PasteToPhones(t, tb.Text, enter.IsChecked == true);
+            _ = PasteToPhones(t, tb.Text, enter.IsChecked == true);
             return false;
         }, "type");
         d.Loaded += (_, _) => tb.Focus();

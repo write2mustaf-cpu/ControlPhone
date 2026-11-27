@@ -52,6 +52,7 @@ public static class SelfCheck
             StreamChecks();
             BackupChecks();
             ShortcutChecks();
+            TypingChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -401,6 +402,27 @@ public static class SelfCheck
         Check(DeviceVideo.Thumb(new DeviceMeta { ThumbFps = 500, ThumbMaxSize = 9000 }, st) == new VideoPlan(1920, 600_000, 60), "out-of-range overrides clamped");
         Check(DeviceVideo.HasOverrides(weak) && !DeviceVideo.HasOverrides(new DeviceMeta()) && !DeviceVideo.HasOverrides(null), "override detection");
         Check(!DeviceVideo.HasOverrides(Store.MetaOrNull(null)) && Store.MetaOrNull("missing-device") == null, "meta lookup does not create entries");
+    }
+
+    // ---------------- gõ chữ vào điện thoại ----------------
+    static void TypingChecks()
+    {
+        Check(Typing.IsPlainAscii("hello world"), "plain ASCII goes straight to the phone");
+        Check(!Typing.IsPlainAscii("مرحبا"), "Arabic text needs the clipboard route", Typing.AdbArg("مرحبا"));
+        Check(!Typing.IsPlainAscii("xin chào"), "Vietnamese diacritics need the clipboard route");
+        Check(!Typing.IsPlainAscii("line1\nline2"), "multi-line text needs the clipboard route");
+        Check(!Typing.IsPlainAscii(new string('a', Typing.MaxDirect + 1)), "very long text goes through the clipboard");
+        Check(!Typing.IsPlainAscii(""), "empty text is not plain ASCII");
+        Check(Typing.NeedsSession("مرحبا") && !Typing.NeedsSession("abc"), "only non-ASCII text needs a live session");
+        Check(Typing.AdbArg("a b") == "a%sb", "spaces become %s for adb input text", Typing.AdbArg("a b"));
+        Check(Typing.AdbArg("a;b|c&d") == "a\\;b\\|c\\&d", "shell metacharacters are escaped", Typing.AdbArg("a;b|c&d"));
+        Check(Typing.AdbArg("it's") == "it\\'s", "a quote cannot break the adb command", Typing.AdbArg("it's"));
+        Check(Typing.AdbArg("a\tb") == "a%sb", "tabs do not become control characters", Typing.AdbArg("a\tb"));
+        Check(Typing.CanUseAdb("plain") && Typing.CanUseAdb("two\nlines") && !Typing.CanUseAdb("مرحبا"),
+            "adb is only used for text it can actually type");
+        Check(Typing.Preview("a\nb") == "a b", "previews stay on one line", Typing.Preview("a\nb"));
+        Check(Typing.Preview(new string('x', 50)).EndsWith("…") && Typing.Preview(new string('x', 50)).Length == 41,
+            "long previews are cut with an ellipsis", Typing.Preview(new string('x', 50)));
     }
 
     // ---------------- điều khiển hàng đợi thao tác hàng loạt ----------------

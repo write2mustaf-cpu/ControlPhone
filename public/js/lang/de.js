@@ -717,4 +717,11 @@ export default {
   "Không còn máy lỗi để thử lại": "Keine fehlgeschlagenen Telefone mehr",
   "Đang thử lại trên {0} máy": "Wiederholung auf {0} Telefonen",
   "Thử lại: {0}": "Wiederholen: {0}",
+  "Không có chữ để gõ": "Kein Text zum Eingeben",
+  "Máy đang không kết nối": "Telefon ist nicht verbunden",
+  "qua phiên xem": "über die Spiegelsitzung",
+  "Chữ này cần phiên xem của máy (mở xem hoặc màn hình lớn): adb chỉ gõ được ASCII": "Dieser Text braucht eine offene Spiegelsitzung auf dem Telefon (Telefon oder Großbild öffnen): adb kann nur ASCII tippen",
+  "Máy chưa sẵn sàng": "Telefon noch nicht bereit",
+  "qua adb": "über adb",
+  "{0} máy không nhận được chữ — {1}": "{0} Telefon(e) haben den Text nicht erhalten — {1}",
 };

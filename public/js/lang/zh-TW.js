@@ -717,4 +717,11 @@ export default {
   "Không còn máy lỗi để thử lại": "沒有可重試的失敗手機",
   "Đang thử lại trên {0} máy": "正在 {0} 支手機上重試",
   "Thử lại: {0}": "重試：{0}",
+  "Không có chữ để gõ": "沒有可輸入的文字",
+  "Máy đang không kết nối": "手機未連線",
+  "qua phiên xem": "透過投影工作階段",
+  "Chữ này cần phiên xem của máy (mở xem hoặc màn hình lớn): adb chỉ gõ được ASCII": "此文字需要該手機開啟投影工作階段（開啟手機或大螢幕）：adb 只能輸入 ASCII",
+  "Máy chưa sẵn sàng": "手機尚未就緒",
+  "qua adb": "透過 adb",
+  "{0} máy không nhận được chữ — {1}": "{0} 支手機未收到文字 — {1}",
 };

@@ -49,7 +49,7 @@ public partial class MainWindow
         TextB("Dán", "clipboard", "Dán clipboard máy tính vào tất cả máy đang chọn (Ctrl+V)", () =>
         {
             var v = SelOnline();
-            if (v.Count > 0) PasteToPhones(v, Clipboard.ContainsText() ? Clipboard.GetText() : "");
+            if (v.Count > 0) _ = PasteToPhones(v, Clipboard.ContainsText() ? Clipboard.GetText() : "");
         });
         TextB("Ứng dụng", "apps", "Mở / dừng / gỡ ứng dụng", () => { var ids = SelIds(); if (ids.Count > 0) DlgApps(ids, null); });
         TextB("Cài APK", "package", "Cài APK (hoặc kéo thả file .apk vào cửa sổ)", () => { if (SelIds().Count > 0) PickApks(null); });

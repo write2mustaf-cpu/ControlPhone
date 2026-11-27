@@ -332,7 +332,7 @@ public partial class MainWindow
             var targets = PasteTargets();
             if (targets.Count == 0) return;
             e.Handled = true;
-            PasteToPhones(targets, Clipboard.ContainsText() ? Clipboard.GetText() : "");
+            _ = PasteToPhones(targets, Clipboard.ContainsText() ? Clipboard.GetText() : "");
             return;
         }
         // Esc luôn đóng màn hình phóng to; nút Quay lại của điện thoại = chuột phải / nút bên phải
@@ -409,19 +409,22 @@ public partial class MainWindow
         return set;
     }
 
-    void PasteToPhones(List<PhoneDevice> targets, string text, bool enter = false)
+    async Task<(int Ok, int Fail)> PasteToPhones(List<PhoneDevice> targets, string text, bool enter = false)
     {
-        if (string.IsNullOrEmpty(text)) { Ui.Toast("Clipboard máy tính đang trống (chỉ dán được văn bản)", "err"); return; }
+        if (string.IsNullOrEmpty(text)) { Ui.Toast("Clipboard máy tính đang trống (chỉ dán được văn bản)", "err"); return (0, 0); }
         FlushText();
+        int ok = 0, fail = 0;
+        string firstError = "";
         foreach (var d in targets)
         {
-            var s = d.ControlSession;
-            if (s == null) continue;
-            s.TypeText(text, paste: true);
-            if (enter) _ = Task.Delay(150).ContinueWith(_ => s.KeyPress(AndroidKey.Enter));
+            var (sent, msg) = await Typing.SendAsync(d, text, enter);
+            if (sent) ok++;
+            else { fail++; if (firstError == "") firstError = msg; }
         }
-        var preview = text.Length > 40 ? text[..40] + "…" : text;
-        Ui.Toast(T("Đã dán vào {0} máy: \"{1}\"", targets.Count, preview), "ok");
+        var preview = Typing.Preview(text);
+        if (ok > 0) Ui.Toast(T("Đã dán vào {0} máy: \"{1}\"", ok, preview), "ok");
+        if (fail > 0) Ui.Toast(T("{0} máy không nhận được chữ — {1}", fail, firstError), "err", 9000);
+        return (ok, fail);
     }
 
     void OnPhoneClipboard(PhoneDevice d, string text)
