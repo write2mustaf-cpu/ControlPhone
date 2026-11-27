@@ -72,6 +72,7 @@ public partial class MainWindow
         d.AddAction("Để sau");
         d.AddAction("Bỏ qua bản này", "Btn", () => { Store.Ui.SkipVersion = info.Tag; Store.SaveUi(); return true; });
         if (info.HasInstaller) d.AddAction("Tải bộ cài", "Btn", () => { OpenLink(info.SetupUrl); return false; }, "download");
+        if (info.HasZip) d.AddAction("Tải ZIP", "Btn", () => { OpenLink(info.ZipUrl); return false; }, "download");
         d.AddAction("Mở trang phát hành", "Primary", () => { OpenLink(info.Url); return false; }, "link");
         d.ShowDialog();
     }

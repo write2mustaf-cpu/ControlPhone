@@ -110,8 +110,10 @@ failed phones* never picks up the stopped ones.
 - Native scrcpy window for any phone as a fallback.
 
 **Updates (ControlPhone 3.3+)**
-- *⋯ → Check for updates…* asks GitHub for the newest release and shows what changed, the asset sizes and two buttons:
-  open the release page or download the installer. Nothing is downloaded or installed behind your back.
+- *⋯ → Check for updates…* asks GitHub for the newest release and shows what changed, the asset sizes and buttons for
+  the installer, the portable ZIP or the release page. Nothing is downloaded or installed behind your back.
+- The right files are chosen by name, not by API order: a release also carries a few-KB `-manifests.zip`, and that must
+  never become the "Download ZIP" target.
 - The check runs by itself at most once per 24 hours (can be switched off in *Links & support*), and *Skip this version*
   keeps it quiet until the next release.
 

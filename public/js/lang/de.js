@@ -734,4 +734,5 @@ export default {
   "Máy đang mở xem: dán qua clipboard nên gõ được mọi ký tự có dấu. Máy không mở xem: chỉ ASCII qua adb.": "Telefone mit offener Spiegelsitzung erhalten beliebigen Text (Zwischenablage). Ohne Sitzung nur ASCII über adb.",
   "Kết quả từng máy hiện trong bảng kết quả — có thể dừng một máy hoặc thử lại đúng máy lỗi.": "Das Ergebnis jedes Telefons erscheint in der Ergebnisliste — einzelne Telefone stoppen oder nur die fehlgeschlagenen wiederholen.",
   "Gõ chữ": "Text eingeben",
+  "Tải ZIP": "ZIP herunterladen",
 };

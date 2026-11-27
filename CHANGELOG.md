@@ -3,6 +3,28 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.16.0 — "Download ZIP" can no longer hand you a YAML file
+
+### The bug (self-inflicted in 3.15.0)
+`Updates.Parse` took *the last* `.zip` asset in the GitHub response. That was harmless while a release had two files. Then
+3.15.0 started attaching a third one — `ControlPhone-v3.15.0-manifests.zip`, 2 KB of YAML. Depending on asset order, the
+update dialog would report "ZIP 0.0 MB" and hand the user a manifest archive instead of the 80 MB app. It happened to work
+only because GitHub returned the assets in alphabetical order.
+
+### The fix
+- `Updates.PickAssets` picks by **name**: the installer is the `.exe` with `setup` in it, the portable package is the
+  `.zip` with `win64`/`portable` in it; `manifest`, `symbol`, `source`, `checksum`, `sha256` and `debug` archives are
+  rejected outright, and zero-size entries (upload still running) are never offered as a download. Ties go to the larger
+  file, so order from the API no longer matters.
+- The update dialog also gained a **Download ZIP** button next to *Download installer* — the portable build had no direct
+  button before, only the release page.
+- `Tải ZIP` translated into the six shipped languages.
+
+### Verification
+- Self-check 275 → **285**: ten checks around the picker — three-asset release, reversed order, an adversarial
+  manifests archive that is *larger* than the portable ZIP, manifests-only, symbols + plain zip, a zip without the win64
+  suffix, zero-size assets, an empty asset list, and a full `Parse` of a three-asset response.
+
 ## 3.15.0 — The first published package (Scoop bucket + winget manifests)
 
 ### The gap

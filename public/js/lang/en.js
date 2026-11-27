@@ -827,4 +827,5 @@ export default {
   "Máy đang mở xem: dán qua clipboard nên gõ được mọi ký tự có dấu. Máy không mở xem: chỉ ASCII qua adb.": "Phones with an open mirror receive any text (clipboard paste). Phones without one only take ASCII, via adb.",
   "Kết quả từng máy hiện trong bảng kết quả — có thể dừng một máy hoặc thử lại đúng máy lỗi.": "Each phone's result appears in the results panel — you can stop one phone or retry only the failed ones.",
   "Gõ chữ": "Type text",
+  "Tải ZIP": "Download ZIP",
 };
