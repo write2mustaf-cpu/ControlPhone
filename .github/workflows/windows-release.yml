@@ -1,0 +1,98 @@
+name: Windows build & release
+
+# Bản Windows thật (self-contained, không cần cài .NET) được dựng trên Windows của GitHub:
+# mỗi lần push vào main / PR → dựng + chạy tự kiểm tra (ControlPhone.exe --selfcheck) + lưu ZIP.
+# Khi push tag v*.*.* → tạo GitHub Release và đính kèm ZIP.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch scrcpy 5.0 (adb, FFmpeg, scrcpy-server) into vendor/
+        run: npm run setup
+
+      - name: Version
+        id: ver
+        shell: pwsh
+        run: |
+          $v = (Select-String -Path native/ControlPhone/ControlPhone.csproj -Pattern '<Version>([^<]+)</Version>').Matches[0].Groups[1].Value
+          "version=$v" >> $env:GITHUB_OUTPUT
+          "zip=ControlPhone-v$v-win64" >> $env:GITHUB_OUTPUT
+
+      - name: Publish self-contained win-x64
+        run: >
+          dotnet publish native/ControlPhone/ControlPhone.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:EnableWindowsTargeting=true -p:DebugType=none
+          -o dist/ControlPhone
+
+      - name: Self-check (no phones required)
+        shell: pwsh
+        run: |
+          $log = Join-Path $env:TEMP 'controlphone-selfcheck.log'
+          Remove-Item $log -ErrorAction SilentlyContinue
+          & dist/ControlPhone/ControlPhone.exe --selfcheck
+          $code = $LASTEXITCODE
+          if (Test-Path $log) { Get-Content $log }
+          if ($code -ne 0) { Write-Error "Self-check failed (exit $code)"; exit 1 }
+          Write-Host "Self-check passed."
+
+      - name: Add documentation to the package
+        shell: pwsh
+        run: |
+          $dst = 'dist/ControlPhone'
+          Copy-Item README.md, LICENSE, NOTICE.md, CHANGELOG.md $dst
+          New-Item -ItemType Directory -Force "$dst/docs" | Out-Null
+          Copy-Item docs/*.md "$dst/docs" -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force "$dst/docs/ar" | Out-Null
+          Copy-Item docs/ar/*.md "$dst/docs/ar" -ErrorAction SilentlyContinue
+
+      - name: Package portable ZIP
+        shell: pwsh
+        run: |
+          $name = '${{ steps.ver.outputs.zip }}'
+          Compress-Archive -Path 'dist/ControlPhone/*' -DestinationPath "dist/$name.zip" -CompressionLevel Optimal
+          $size = [math]::Round((Get-Item "dist/$name.zip").Length / 1MB, 1)
+          Write-Host "$name.zip = $size MB"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.ver.outputs.zip }}
+          path: dist/${{ steps.ver.outputs.zip }}.zip
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $zip = "dist/${{ steps.ver.outputs.zip }}.zip"
+          $notes = if (Test-Path CHANGELOG.md) { Get-Content CHANGELOG.md -Raw } else { "ControlPhone $tag" }
+          gh release create $tag $zip --title "ControlPhone $tag" --notes $notes --latest

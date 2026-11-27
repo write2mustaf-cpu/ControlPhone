@@ -271,3 +271,13 @@ kbd { font: 11px Consolas, monospace; padding: 1px 5px; border: 1px solid var(--
 .donate-acts a.btn { text-decoration: none; }
 .donate-note { font-size: 11.5px; color: var(--muted); text-align: center; }
 .help-list { display: flex; flex-direction: column; gap: 3px; }
+/* ================= العربية / RTL =================
+   bố cục gương cho tiếng Ả Rập: dùng dir="rtl" trên <html> (i18n.js) + đảo vài chỗ flex cố định */
+html[dir="rtl"] body { direction: rtl; }
+html[dir="rtl"] .sidebar { border-right: 0; border-left: 1px solid var(--line); }
+html[dir="rtl"] .btn.block { justify-content: flex-start; }
+html[dir="rtl"] .mono, html[dir="rtl"] code, html[dir="rtl"] .donate-addr, html[dir="rtl"] input[type="text"], html[dir="rtl"] input[type="url"], html[dir="rtl"] textarea {
+  direction: ltr; text-align: left; unicode-bidi: plaintext;
+}
+html[dir="rtl"] .tile-head, html[dir="rtl"] .stat, html[dir="rtl"] .brand { direction: rtl; }
+html[dir="rtl"] .donate-addr { direction: ltr; }

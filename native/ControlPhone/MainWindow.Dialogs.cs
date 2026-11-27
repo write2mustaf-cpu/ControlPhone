@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using ControlPhone.Adb;
+using ControlPhone.Ai;
 using ControlPhone.Core;
 using Microsoft.Win32;
 
@@ -395,6 +396,20 @@ public partial class MainWindow
             }
             return g;
         }
+        // ngôn ngữ + các trung tâm cài đặt (AI, hỗ trợ, xuất/nhập)
+        var langSel = new ComboBox();
+        foreach (var (code, name) in I18n.Langs) langSel.Items.Add(new ComboBoxItem { Content = name, Tag = code, IsSelected = code == I18n.Lang });
+        var hubs = new WrapPanel { Margin = new Thickness(0, 0, 0, 4) };
+        var aiBtn = Ui.Btn("Nhà cung cấp AI…", "key", "Btn", (_, _) => AiProvidersDialog.Show(d));
+        var supBtn = Ui.Btn("Liên hệ & hỗ trợ", "globe", "Btn", (_, _) => DlgSupport());
+        var impBtn = Ui.Btn("Xuất / nhập cài đặt…", "upload", "Btn", (_, _) => DlgExportImport());
+        foreach (var b in new[] { aiBtn, supBtn, impBtn }) { b.Margin = new Thickness(0, 0, 6, 4); hubs.Children.Add(b); }
+        var langRow = new DockPanel { Margin = new Thickness(0, 0, 0, 10) };
+        DockPanel.SetDock(hubs, Dock.Right);
+        langRow.Children.Add(hubs);
+        langRow.Children.Add(d.Field("Ngôn ngữ / Language / اللغة", langSel));
+        d.Body.Children.Add(langRow);
+
         var pre = new WrapPanel();
         d.Body.Children.Add(d.Field("Chất lượng lưới (xem nhiều máy) — mức nhẹ giúp chạy được 100 máy", pre));
         var tMax = Num("Độ phân giải tối đa (px cạnh dài)", s.ThumbMaxSize, out var f1);
@@ -490,6 +505,15 @@ public partial class MainWindow
             if (before != (s.ThumbMaxSize, s.ThumbBitRate, s.ThumbFps, s.PowerOnConnect, s.ScreenOffOnConnect, s.SoftwareEncoder)) manager.RestartAll();
             else if (beforeHq != (s.HqMaxSize, s.HqBitRate, s.HqFps) && viewerId != null && manager.Get(viewerId) is { } vd) { manager.ReleaseHq(vd); manager.AcquireHq(vd); }
             if (prefBefore != s.PreferTransport) manager.ReapplyTransportPreference();
+            var newLang = (string)((ComboBoxItem)langSel.SelectedItem).Tag;
+            if (newLang != I18n.Lang)
+            {
+                Store.Ui.Lang = newLang; Store.FlushUi();
+                Ui.Toast("Đã đổi ngôn ngữ — ControlPhone sẽ khởi động lại", "ok", 4000);
+                App.RestartIn(ModeArgs);
+                Close();
+                return true;
+            }
             Ui.Toast("Đã lưu cài đặt", "ok");
             return true;
         });

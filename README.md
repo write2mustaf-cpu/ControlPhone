@@ -8,7 +8,7 @@
 
 [Tiếng Việt](README.vi.md) · English
 
-UI languages: English · Tiếng Việt · 简体中文 · 繁體中文 · Deutsch · Français
+UI languages: English · Tiếng Việt · **العربية (RTL)** · 简体中文 · 繁體中文 · Deutsch · Français
 
 ![ControlPhone](docs/screenshot-grid.jpg)
 
@@ -19,6 +19,30 @@ UI languages: English · Tiếng Việt · 简体中文 · 繁體中文 · Deuts
 ---
 
 > **🆕 ControlPhone 2 — native Windows app.** From version 2.0 ControlPhone is a native Windows app (C# / WPF) with **every feature of 1.x**: no Node server, no port, no browser window, no `.bat`. Video is decoded with native **FFmpeg**, one decoding thread per phone. Download **`ControlPhone-v2.x-win64.zip`** from [Releases](https://github.com/mahiepit/ControlPhone/releases), extract and run **`ControlPhone.exe`** (self-contained, nothing to install). Your names, numbers and groups from 1.x are kept: copy the old `data` folder next to `ControlPhone.exe`. Source: [`native/`](native/). The web version (1.x, `ControlPhone.bat`) stays in this repository.
+
+## 🆕 ControlPhone 3.0 — Arabic UI, multi-provider AI, built-in assistant
+
+**What is new in 3.0** (native Windows app, still the same engines: ADB socket client, scrcpy-server sessions,
+FFmpeg decoding, device manager, group sync, recovery, OTG/LAN):
+
+- **Full Arabic interface with real RTL** — 714 translated strings, every window mirrored, technical fields (URLs,
+  ADB commands, API keys) kept left-to-right. Language is saved and restored; switching restarts the app once.
+- **Multi-provider AI** — Google Gemini, OpenAI, Anthropic Claude and any OpenAI-compatible service (OpenRouter,
+  DeepSeek, Groq, local Ollama, custom URL). Per provider: model, max answer length, temperature, timeout, test
+  connection, model list, default flag. **Your own API key**, encrypted with Windows DPAPI for your Windows account,
+  never logged, never embedded in the build, never sent anywhere except the provider you choose.
+- **An assistant that actually operates the app** — 25 tools wired to the real functions (devices, details, groups,
+  selection, stream control, keys, typing, URLs, apps, APK install, file push, ADB shell, Wi-Fi connect, LAN scan,
+  screenshots, settings, diagnostics, logs, guide). Sensitive tools ask for approval first and show the target phones.
+  It answers in Arabic, English, Vietnamese… and never invents device state.
+- **Our links & support** — official email, Telegram channel and group, Facebook page and the Sham Cash support ID,
+  each with working open/copy buttons (Settings → *Our links & support*).
+- **Settings export/import** (keys excluded by design), a new operation log, and `ControlPhone.exe --selfcheck`
+  which verifies translations/RTL, DPAPI, provider storage, all three AI protocols, the tool registry and the support
+  data without a phone attached. The GitHub workflow runs it on Windows before publishing a release.
+
+Docs: [Windows install](docs/WINDOWS-INSTALL.md) · [AI providers & assistant](docs/AI-ASSISTANT.md) ·
+[Support](docs/SUPPORT.md) · [الدليل العربي](docs/ar/README-ar.md) · [Changelog](CHANGELOG.md)
 
 ## ✨ Why ControlPhone
 
@@ -177,6 +201,20 @@ tools/setup.js          downloads & verifies scrcpy      tools/pack.js   builds 
 ```
 
 Want to add a language? Copy `public/js/lang/en.js`, translate the values, add it to `LANGS` in `public/js/i18n.js`, and run `npm run i18n:check`.
+
+## 📬 Our links & support
+
+| Channel | Value |
+|---|---|
+| Email | [mwings740@gmail.com](mailto:mwings740@gmail.com) |
+| Telegram channel | https://t.me/+SiOMr4JAU8thZDFk |
+| Telegram group | https://t.me/+ZXt8aHvs5ok2ZjM0 |
+| Facebook page | https://www.facebook.com/share/1DuqpyXuTa/ |
+| Sham Cash support ID | `963793dbb5e910b81683981b2c8fd9f6` |
+
+Inside the app: **Settings → Our links & support** (روابطنا والدعم) with open/copy buttons for every entry.
+The Sham Cash ID is support information only — ControlPhone never performs money transfers and never asks for
+financial data.
 
 ## 📄 License
 

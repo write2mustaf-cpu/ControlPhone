@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using ControlPhone.Ai;
 using ControlPhone.Core;
 
 namespace ControlPhone;
@@ -71,6 +72,11 @@ public partial class MainWindow
 
     IEnumerable<MenuSpec?> MoreMenu() =>
     [
+        new("Trợ lý AI", "chat", () => ShowAiChat()),
+        new("Nhà cung cấp AI…", "key", () => AiProvidersDialog.Show(this)),
+        new("Liên hệ & hỗ trợ", "globe", DlgSupport),
+        new("Xuất / nhập cài đặt…", "upload", DlgExportImport),
+        null,
         new("Thêm vào nhóm…", "tag", () => DlgGroup(SelIds(), false)),
         new("Bỏ khỏi nhóm…", "tag", () => DlgGroup(SelIds(), true)),
         new("Đánh số lại theo thứ tự đang hiển thị", "hash", RenumberAll),

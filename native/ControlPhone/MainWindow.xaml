@@ -76,6 +76,12 @@
                 <!-- bên phải -->
                 <Button x:Name="BtnSettings" DockPanel.Dock="Right" Style="{DynamicResource IconGhost}" Content="&#xE713;" ToolTip="Cài đặt"/>
                 <Button x:Name="BtnTheme" DockPanel.Dock="Right" Style="{DynamicResource IconGhost}" Content="&#xE708;" ToolTip="Sáng/Tối"/>
+                <Button x:Name="BtnAi" DockPanel.Dock="Right" Style="{DynamicResource Ghost}" Margin="2,0" ToolTip="Trợ lý AI — điều khiển app bằng tiếng Việt/العربية/English">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE8BD;" FontFamily="{StaticResource IconFont}" Foreground="{DynamicResource Accent}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="AI"/>
+                    </StackPanel>
+                </Button>
                 <Button x:Name="BtnDonate" DockPanel.Dock="Right" Style="{DynamicResource Ghost}" Margin="2,0" ToolTip="Ủng hộ tác giả">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xEB51;" FontFamily="{StaticResource IconFont}" Foreground="#FF5C8A" Margin="0,0,6,0" VerticalAlignment="Center"/>

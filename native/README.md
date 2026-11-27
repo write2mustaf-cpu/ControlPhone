@@ -15,11 +15,15 @@ ControlPhone viết lại thành ứng dụng Windows chạy trực tiếp (C# /
 | `ControlPhone/Scrcpy` | phiên scrcpy (video / chỉ điều khiển), lệnh điều khiển |
 | `ControlPhone/Video` | FFmpeg P/Invoke, bộ giải mã H.264, bộ đệm khung hình kép |
 | `ControlPhone/Core` | quản lý thiết bị, thao tác hàng loạt, lưu trữ, đa ngôn ngữ |
-| `ControlPhone/UI`, `MainWindow.*.cs` | giao diện: lưới, chọn/đồng bộ, phóng to, menu, hộp thoại, tiến trình |
+| `ControlPhone/UI`, `MainWindow.*.cs` | giao diện: lưới, chọn/đồng bộ, phóng to, menu, hộp thoại, tiến trình, liên hệ & hỗ trợ, xuất/nhập cài đặt |
+| `ControlPhone/Ai` | nhà cung cấp AI (Gemini / OpenAI / Anthropic / tương thích OpenAI), mã hoá khoá bằng DPAPI, sổ công cụ, vòng chạy trợ lý, khung chat |
+| `ControlPhone/Core/SelfCheck.cs` | tự kiểm tra không cần điện thoại (`--selfcheck`): bản dịch + RTL, DPAPI, kho AI, 3 giao thức, sổ công cụ, dữ liệu hỗ trợ |
 | `keyboard` | ControlPhone Keyboard — bàn phím Android không giao diện cho chế độ "chỉ nhập từ PC" (build: `keyboard/build.ps1`; khoá ký ở `%USERPROFILE%\.controlphone\keyboard.jks`, không đưa lên git) |
 | `CoreTest` | kiểm thử lõi trên điện thoại thật (chỉ lệnh chỉ đọc), luôn dùng **bản sao** của `data/` trong thư mục tạm: `dotnet run -c Release [-- kbd \| store \| xaml backup \| grid \| keepalive <serial>]` (grid: sắp xếp lưới chỉ dời ô đổi chỗ, WPF giữ nguyên ô) (keepalive: 1 phiên trên 1 máy, kiểm tra đường USB luôn có lưu lượng khi màn hình đứng yên) |
 
 Tự kiểm tra giao diện (không cần thao tác): đặt `CP_SELFTEST=<thư mục>` rồi chạy app — app tự mở từng hộp thoại / màn hình, chụp ảnh vào thư mục đó và thoát.
+
+Tự kiểm tra không cần điện thoại: `ControlPhone.exe --selfcheck` (dùng trong CI) — kiểm tra bản dịch và RTL (7 ngôn ngữ), mã hoá DPAPI, lưu nhà cung cấp AI (không có khoá thô trên đĩa), dựng yêu cầu và đọc trả lời của Gemini/OpenAI/Anthropic, sổ công cụ (kích thước, schema, công cụ nhạy cảm, chặn thao tác hàng loạt ngoài ý muốn) và dữ liệu hỗ trợ; in PASS/FAIL, trả mã lỗi khi có lỗi.
 
 ## Build
 
@@ -32,5 +36,9 @@ Cần thư mục `vendor/scrcpy-win64-v5.0` (chạy `npm run setup` ở thư m�
 Đóng gói bản chạy độc lập:
 
 ```bash
-dotnet publish native/ControlPhone/ControlPhone.csproj -c Release -r win-x64 --self-contained true -o dist/ControlPhone-v2-win64
+dotnet publish native/ControlPhone/ControlPhone.csproj -c Release -r win-x64 --self-contained true -o dist/ControlPhone
 ```
+
+GitHub Actions (`.github/workflows/windows-release.yml`) dựng bản này trên `windows-latest`, chạy
+`ControlPhone.exe --selfcheck`, đóng gói `ControlPhone-v<version>-win64.zip` và (khi push tag `v*.*.*`) tạo Release
+kèm tệp ZIP.

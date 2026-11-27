@@ -5,6 +5,7 @@
 export const LANGS = [
   { code: 'vi', name: 'Tiếng Việt' },
   { code: 'en', name: 'English' },
+  { code: 'ar', name: 'العربية' },
   { code: 'zh-CN', name: '简体中文' },
   { code: 'zh-TW', name: '繁體中文' },
   { code: 'de', name: 'Deutsch' },
@@ -14,6 +15,8 @@ export const LANGS = [
 let lang = 'vi';
 let dict = null; // Map câu gốc → bản dịch
 let patterns = []; // [{ re, out }]
+let fbDict = null; // bản dịch dự phòng (tiếng Anh) cho câu chưa dịch ở ngôn ngữ đang dùng
+let fbPatterns = [];
 
 function detectLang() {
   try {
@@ -22,6 +25,7 @@ function detectLang() {
   } catch (_) { /* bỏ qua */ }
   const nav = (navigator.language || 'en').toLowerCase();
   if (nav.startsWith('vi')) return 'vi';
+  if (nav.startsWith('ar')) return 'ar';
   if (nav.startsWith('zh')) return /tw|hk|mo|hant/.test(nav) ? 'zh-TW' : 'zh-CN';
   if (nav.startsWith('de')) return 'de';
   if (nav.startsWith('fr')) return 'fr';
@@ -37,27 +41,34 @@ export function setLang(code) {
 
 const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-function compile(src) {
-  dict = new Map();
-  patterns = [];
+function compileInto(src) {
+  const d = new Map();
+  const pats = [];
   for (const [k, v] of Object.entries(src)) {
     if (!v) continue;
     if (/\{\d+\}/.test(k)) {
       // mẫu có biến: "Đã chọn {0} máy" → /^Đã chọn (.+?) máy$/
       const order = [];
       const re = new RegExp('^' + escRe(k).replace(/\\\{(\d+)\\\}/g, (_, n) => { order.push(n); return '([\\s\\S]*?)'; }) + '$');
-      patterns.push({ re, order, out: v, len: k.length });
+      pats.push({ re, order, out: v, len: k.length });
     }
-    dict.set(k, v);
+    d.set(k, v);
   }
-  patterns.sort((a, b) => b.len - a.len); // mẫu dài (cụ thể) trước
+  pats.sort((a, b) => b.len - a.len); // mẫu dài (cụ thể) trước
+  return { d, pats };
+}
+
+function compile(src) {
+  const { d, pats } = compileInto(src);
+  dict = d;
+  patterns = pats;
 }
 
 /** Dịch một chuỗi tiếng Việt; trả về nguyên văn nếu không có bản dịch. t('Đã chọn {0} máy', 3) */
 export function t(text, ...args) {
   let out = text;
   if (dict) {
-    const hit = dict.get(text);
+    const hit = dict.get(text) || (fbDict && fbDict.get(text));
     if (hit) out = hit;
     else if (!args.length) out = translateDynamic(text) ?? text;
   }
@@ -65,7 +76,7 @@ export function t(text, ...args) {
 }
 
 function translateDynamic(text) {
-  for (const p of patterns) {
+  for (const p of patterns.concat(fbPatterns)) {
     const m = p.re.exec(text);
     if (!m) continue;
     const vals = {};
@@ -79,7 +90,7 @@ function translateDynamic(text) {
 function translateValue(v) {
   if (!VI.test(v)) return v;
   const [, lead, core, trail] = /^(\s*)([\s\S]*?)(\s*)$/.exec(v); // giữ khoảng trắng 2 đầu
-  const tr = dict.get(core) || translateDynamic(core);
+  const tr = dict.get(core) || (fbDict && fbDict.get(core)) || translateDynamic(core);
   return tr ? lead + tr + trail : v;
 }
 
@@ -90,7 +101,7 @@ function translateString(s) {
   const [, lead, core, trail] = /^(\s*)([\s\S]*?)(\s*)$/.exec(s);
   const norm = core.replace(/\s+/g, ' ');
   // khớp chính xác: dịch cả chuỗi không dấu; khớp theo mẫu: chỉ với chuỗi có dấu tiếng Việt
-  const tr = dict.get(norm) ?? (VI.test(norm) ? translateDynamic(norm) : null);
+  const tr = dict.get(norm) ?? (fbDict && fbDict.get(norm)) ?? (VI.test(norm) ? translateDynamic(norm) : null);
   return tr == null ? null : lead + tr + trail;
 }
 
@@ -124,6 +135,8 @@ function translateAttrs(el) {
 export async function initI18n() {
   lang = detectLang();
   document.documentElement.lang = lang;
+  // tiếng Ả Rập: bố cục gương toàn trang (RTL) — CSS xử lý phần còn lại qua [dir="rtl"]
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   if (lang === 'vi') return;
   try {
     const mod = await import(`./lang/${lang}.js`);
@@ -131,6 +144,14 @@ export async function initI18n() {
   } catch (e) {
     console.warn('Không nạp được ngôn ngữ', lang, e);
     return;
+  }
+  if (lang !== 'en') {
+    try {
+      const en = await import('./lang/en.js');
+      const { d, pats } = compileInto(en.default || {});
+      fbDict = d;
+      fbPatterns = pats;
+    } catch (_) { /* không có bản dự phòng: giữ nguyên câu gốc */ }
   }
   document.title = t(document.title);
   translateNode(document.body);
