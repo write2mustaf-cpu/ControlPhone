@@ -50,7 +50,7 @@ public static class AiClient
         {
             AiProviderKind.Gemini => (b.EndsWith("/v1beta") || b.EndsWith("/v1") ? b : b + "/v1beta") + "/models",
             AiProviderKind.Anthropic => b + (b.EndsWith("/v1") ? "" : "/v1") + "/models",
-            _ => b + (b.EndsWith("/v1") ? "" : "") + "/models",
+            _ => b + "/models",
         };
     }
 

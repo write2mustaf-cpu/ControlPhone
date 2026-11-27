@@ -35,9 +35,13 @@ public interface IAiHost
 public sealed record AiToolResult(bool Ok, string Content, string Summary);
 
 /// <summary>Sổ đăng ký công cụ: mô tả (JSON Schema) + cách chạy trên các máy đã chọn.</summary>
-public sealed class AiToolHost(IAiHost host)
+public sealed class AiToolHost
 {
-    public IAiHost Host { get; } = host;
+    readonly IAiHost host;
+
+    public AiToolHost(IAiHost host) => this.host = host;
+
+    public IAiHost Host => host;
 
     sealed record ToolDef(string Name, string Description, string Params, bool Sensitive,
         Func<JsonObject, CancellationToken, Task<AiToolResult>> Run);
