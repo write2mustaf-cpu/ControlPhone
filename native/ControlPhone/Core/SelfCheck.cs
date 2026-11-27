@@ -52,6 +52,7 @@ public static class SelfCheck
             StreamChecks();
             BackupChecks();
             ShortcutChecks();
+            BatchChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -403,6 +404,54 @@ public static class SelfCheck
         Check(!DeviceVideo.HasOverrides(Store.MetaOrNull(null)) && Store.MetaOrNull("missing-device") == null, "meta lookup does not create entries");
     }
 
+    // ---------------- điều khiển hàng đợi thao tác hàng loạt ----------------
+    static void BatchChecks()
+    {
+        BatchTask New() => new()
+        {
+            Op = "shell",
+            Title = "Kiểm tra",
+            Total = 3,
+            DeviceIds = ["a", "b", "c"],
+            Payload = new() { ["cmd"] = "echo hi" },
+        };
+
+        var t = New();
+        Check(!t.ShouldSkip("a") && t.CancelledCount == 0, "a fresh batch runs every phone");
+        t.CancelDevice("b");
+        Check(t.ShouldSkip("b") && !t.ShouldSkip("a") && !t.ShouldSkip("c"), "cancelling one phone leaves the others alone");
+        Check(t.CancelledCount == 1 && t.CanStop, "cancelling one phone does not stop the whole batch");
+        Check(t.CanStop && !t.Token.IsCancellationRequested && t.Skipped == 0, "batch can be stopped while running");
+        t.Stop();
+        Check(t.ShouldSkip("a") && t.ShouldSkip("c") && !t.CanStop, "stopping the batch skips everything left");
+        Check(!t.CanStop && t.Token.IsCancellationRequested, "stop cancels the queue");
+        Check(t.StatusText == I18n.T("Đang dừng…"), "stopping task says so", t.StatusText);
+        Check(!t.CanStop, "stop is idempotent");
+        var fin = New();
+        fin.Finished = true;
+        Check(!fin.CanStop && fin.StatusText == I18n.T("Xong · bấm để xem"), "finished task reports done", fin.StatusText);
+        Check(!fin.CanStop && fin.Token.IsCancellationRequested == false, "finished task cannot be stopped");
+        Check(new TaskResult("abc", 1, "máy", false, "", true).Skipped && !new TaskResult("abc", 1, "máy", true, "ok").Skipped,
+            "skipped results are marked");
+
+        var done = New();
+        done.Finished = true;
+        done.CancelDevice("a");
+        Check(!done.IsCancelled("a"), "a finished batch ignores late cancellations");
+
+        var r = New();
+        r.Results.Add(new TaskResult("a", 1, "Máy A", true, "ok"));
+        r.Results.Add(new TaskResult("b", 2, "Máy B", false, "lỗi"));
+        r.Results.Add(new TaskResult("c", 3, "Máy C", false, "", true));
+        Check(r.FailedIds.SequenceEqual(["b"]), "only real failures are retried, skipped phones are not", string.Join(",", r.FailedIds));
+        r.Results.Add(new TaskResult("b", 2, "Máy B", false, "lỗi lần 2"));
+        Check(r.FailedIds.SequenceEqual(["b"]), "a phone failing twice is retried once");
+        var allOk = New();
+        allOk.Results.Add(new TaskResult("a", 1, "Máy A", true, "ok"));
+        Check(allOk.FailedIds.Count == 0, "a clean batch has nothing to retry");
+        Check(r.Payload["cmd"] as string == "echo hi" && r.DeviceIds.Count == 3, "the batch keeps its payload and target list for a retry");
+    }
+
     // ---------------- bảng phím tắt ----------------
     static void ShortcutChecks()
     {
@@ -680,24 +729,6 @@ public static class SelfCheck
     }
 
     // ---------------- dừng thao tác hàng loạt ----------------
-    static void BatchChecks()
-    {
-        var t = new BatchTask { Op = "test", Title = "kiểm tra", Total = 3 };
-        Check(t.CanStop && !t.Token.IsCancellationRequested && t.Skipped == 0, "batch can be stopped while running");
-        t.Stop();
-        Check(!t.CanStop && t.Token.IsCancellationRequested, "stop cancels the queue");
-        Check(t.StatusText == I18n.T("Đang dừng…"), "stopping task says so", t.StatusText);
-        t.Stop();
-        Check(!t.CanStop, "stop is idempotent");
-        t.Finished = true;
-        Check(!t.CanStop && t.StatusText == I18n.T("Xong · bấm để xem"), "finished task reports done", t.StatusText);
-
-        var done = new BatchTask { Op = "test", Title = "xong", Total = 1, Finished = true };
-        Check(!done.CanStop && done.Token.IsCancellationRequested == false, "finished task cannot be stopped");
-
-        var skipped = new TaskResult("abc", 1, "máy", false, "", Skipped: true);
-        Check(skipped.Skipped && !new TaskResult("abc", 1, "máy", true, "ok").Skipped, "skipped results are flagged");
-    }
 
     // ---------------- kiểm tra bản cập nhật (phân tích thuần, không cần mạng) ----------------
     static void UpdateChecks()

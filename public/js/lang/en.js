@@ -801,4 +801,13 @@ export default {
   "Hãy chọn ít nhất một máy trước": "Select at least one phone first",
   "Đang kết nối lại luồng hình của {0} máy": "Reconnecting the video stream of {0} phones",
   "Không có máy nào để chụp": "No phone to capture",
+  "Huỷ riêng máy này, các máy khác vẫn chạy": "Cancel this phone only, the others keep running",
+  "Đã huỷ": "Cancelled",
+  "Không chạy": "Not run",
+  "Đang chờ…": "Waiting…",
+  "Dừng tất cả": "Stop all",
+  "Thử lại {0} máy lỗi": "Retry {0} failed phones",
+  "Không còn máy lỗi để thử lại": "No failed phones left to retry",
+  "Đang thử lại trên {0} máy": "Retrying on {0} phones",
+  "Thử lại: {0}": "Retry: {0}",
 };

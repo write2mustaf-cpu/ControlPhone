@@ -708,4 +708,13 @@ export default {
   "Hãy chọn ít nhất một máy trước": "請先選擇至少一支手機",
   "Đang kết nối lại luồng hình của {0} máy": "正在重新連線 {0} 支手機的視訊串流",
   "Không có máy nào để chụp": "沒有可擷取的手機",
+  "Huỷ riêng máy này, các máy khác vẫn chạy": "僅取消這支手機，其他繼續",
+  "Đã huỷ": "已取消",
+  "Không chạy": "未執行",
+  "Đang chờ…": "等待中…",
+  "Dừng tất cả": "全部停止",
+  "Thử lại {0} máy lỗi": "重試 {0} 支失敗的手機",
+  "Không còn máy lỗi để thử lại": "沒有可重試的失敗手機",
+  "Đang thử lại trên {0} máy": "正在 {0} 支手機上重試",
+  "Thử lại: {0}": "重試：{0}",
 };
