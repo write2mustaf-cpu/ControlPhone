@@ -17,7 +17,9 @@ Repository notes for AI agents working on ControlPhone (multi-phone Android cont
       appended, no duplicates), `Move(order, id, delta)` (clamped), `MovePast(full, id, neighbour, delta)` for filtered
       grids. Persisted in `Store.Ui.Order`, sort mode `"manual"`.
     - `Typing` (`Core/Typing.cs`) — text delivery: session (Unicode via clipboard paste) when open, `adb shell input text`
-      for plain ASCII only; `AdbArg` escapes spaces/metacharacters; `SendAsync` returns (ok, how it went) per phone.
+      for plain ASCII only; `AdbArg` escapes spaces/metacharacters; `SendAsync` returns (ok, how it went) per phone;
+      `Summary(text, results)` formats OK/PARTIAL/FAIL with one line per phone. Typing is the batch op `"text"`
+      (`Actions.Ops`), so it gets the queue, per-phone cancel and `Retry` (payload carries text+enter).
     - `BatchTask` (`Core/Actions.cs`) — keeps `Payload` + `DeviceIds` so `Actions.Retry` can re-run the same operation on
       `FailedIds` only; `CancelDevice(id)` cancels one phone (`ShouldSkip`), `Stop()` cancels the queue.
     - `Shortcuts.cs` — shortcut table (`Key`+`ModifierKeys` → action id) with a pure `Match`, `Gesture` for the help
@@ -61,7 +63,7 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (269 checks as of 3.13.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (275 checks as of 3.14.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
 ## Gotchas

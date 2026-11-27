@@ -212,18 +212,8 @@ public partial class MainWindow : IAiHost
             {
                 var text = args.TryGetValue("text", out var tv) ? tv?.ToString() ?? "" : "";
                 if (text == "") return "FAIL: missing text";
-                var targets = ids.Select(manager.Get).Where(d => d is { IsOnline: true }).Cast<PhoneDevice>().ToList();
-                if (targets.Count == 0) return "FAIL: no online phone in the target list";
-                int ok = 0;
-                var lines = new List<string>();
-                foreach (var d in targets)
-                {
-                    var (sent, msg) = await Typing.SendAsync(d, text, false);
-                    if (sent) ok++;
-                    lines.Add($"  {(sent ? "OK" : "FAIL")} {manager.LabelOf(d)} — {msg}");
-                }
-                var head = ok == targets.Count ? "OK" : ok == 0 ? "FAIL" : "PARTIAL";
-                return $"{head}: typed \"{Typing.Preview(text)}\" on {ok}/{targets.Count} phone(s)\n" + string.Join("\n", lines);
+                args["text"] = text;
+                break; // chạy qua máy thao tác hàng loạt để có kết quả từng máy, dừng và thử lại được
             }
             case "action":
             {
@@ -241,7 +231,7 @@ public partial class MainWindow : IAiHost
         var tcs = new TaskCompletionSource<BatchTask?>();
         await Dispatcher.InvokeAsync(() =>
         {
-            try { tcs.SetResult(Batch(op, ids, args, op)); }
+            try { tcs.SetResult(Batch(op, ids, args, op == "text" ? I18n.T("Gõ chữ") : op)); }
             catch (Exception e) { tcs.SetException(e); }
         });
         var task = await tcs.Task;
@@ -251,6 +241,9 @@ public partial class MainWindow : IAiHost
             ct.ThrowIfCancellationRequested();
             await Task.Delay(150, ct);
         }
+        if (task.Op == "text")
+            return Typing.Summary(args.TryGetValue("text", out var tx) ? tx?.ToString() ?? "" : "",
+                task.Results.Select(r => (r.Name, r.Ok, r.Msg)).ToList());
         var sb2 = new StringBuilder();
         sb2.AppendLine($"{task.OkCount} ok · {task.Fail} failed · {task.Total} phone(s) — {task.Op}");
         foreach (var r in task.Results)

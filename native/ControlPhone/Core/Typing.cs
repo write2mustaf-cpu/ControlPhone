@@ -46,6 +46,20 @@ public static class Typing
         return one.Length > max ? one[..max] + "…" : one;
     }
 
+    /// <summary>
+    /// Tóm tắt kết quả gõ chữ: OK khi mọi máy nhận, FAIL khi không máy nào, PARTIAL khi chỉ một phần — kèm một dòng mỗi máy
+    /// để trợ lý không thể nói "đã gõ xong" khi thực tế có máy không nhận.
+    /// </summary>
+    public static string Summary(string text, IReadOnlyCollection<(string Label, bool Ok, string Msg)> results)
+    {
+        int ok = results.Count(r => r.Ok);
+        var head = results.Count == 0 ? "FAIL" : ok == results.Count ? "OK" : ok == 0 ? "FAIL" : "PARTIAL";
+        var sb = new StringBuilder();
+        sb.Append($"{head}: typed \"{Preview(text)}\" on {ok}/{results.Count} phone(s)");
+        foreach (var r in results) sb.Append("\n  ").Append(r.Ok ? "OK" : "FAIL").Append(' ').Append(r.Label).Append(" — ").Append(r.Msg);
+        return sb.ToString();
+    }
+
     /// <summary>Gửi chữ tới một máy. Trả về (ok, mô tả đường đi hoặc lý do lỗi).</summary>
     public static async Task<(bool Ok, string Msg)> SendAsync(PhoneDevice d, string text, bool enter = false)
     {

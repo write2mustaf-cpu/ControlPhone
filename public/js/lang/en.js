@@ -824,4 +824,7 @@ export default {
   "Đã ở cuối lưới": "Already last on the grid",
   "Đã dời #{0} · thứ tự được lưu lại": "Moved #{0} · the order is saved",
   "Dời ô cần chọn đúng một máy": "Moving a tile needs exactly one phone selected",
+  "Máy đang mở xem: dán qua clipboard nên gõ được mọi ký tự có dấu. Máy không mở xem: chỉ ASCII qua adb.": "Phones with an open mirror receive any text (clipboard paste). Phones without one only take ASCII, via adb.",
+  "Kết quả từng máy hiện trong bảng kết quả — có thể dừng một máy hoặc thử lại đúng máy lỗi.": "Each phone's result appears in the results panel — you can stop one phone or retry only the failed ones.",
+  "Gõ chữ": "Type text",
 };

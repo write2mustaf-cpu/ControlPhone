@@ -48,13 +48,15 @@ public partial class MainWindow
         var d = new Dlg(T("Gửi văn bản tới {0} máy", v.Count));
         var tb = d.AddInput("Nội dung (hỗ trợ tiếng Việt, emoji). Hãy chạm vào ô nhập trên điện thoại trước.", "", "", multiline: true);
         var enter = d.AddCheck("Nhấn Enter sau khi gửi");
-        d.AddNote("Văn bản được dán qua clipboard nên gõ được mọi ký tự có dấu.");
+        d.AddNote("Máy đang mở xem: dán qua clipboard nên gõ được mọi ký tự có dấu. Máy không mở xem: chỉ ASCII qua adb.");
+        d.AddNote("Kết quả từng máy hiện trong bảng kết quả — có thể dừng một máy hoặc thử lại đúng máy lỗi.");
         d.AddAction("Đóng");
         d.AddAction("Gửi", "Primary", () =>
         {
             if (tb.Text == "") return false;
             var t = SelOnline();
-            _ = PasteToPhones(t, tb.Text, enter.IsChecked == true);
+            Batch("text", t.Select(x => x.Id).ToList(),
+                new() { ["text"] = tb.Text, ["enter"] = enter.IsChecked == true }, T("Gõ chữ"), openResults: true);
             return false;
         }, "type");
         d.Loaded += (_, _) => tb.Focus();
