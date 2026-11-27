@@ -18,17 +18,18 @@ public static class SelfCheck
     static void Check(bool ok, string name, string detail = "")
     {
         if (ok) pass++; else fail++;
-        lines.Add($"{(ok ? "PASS" : "FAIL")}  {name}{(detail != "" ? "  — " + detail : "")}");
+        lines.Add($"{(ok ? "PASS" : "FAIL")}  {name}{(detail != "" ? "  | " + detail : "")}");
     }
 
     static void Skip(string name, string why)
     {
         skip++;
-        lines.Add($"SKIP  {name}  — {why}");
+        lines.Add($"SKIP  {name}  | {why}");
     }
 
     public static int Run()
     {
+        try { Console.OutputEncoding = System.Text.Encoding.UTF8; } catch { } // tiếng Việt/Ả Rập hiện đúng trong log CI
         // thư mục dữ liệu tạm: không bao giờ chạm dữ liệu thật của người dùng
         var tmp = Path.Combine(Path.GetTempPath(), "cp-selfcheck-" + Guid.NewGuid().ToString("n")[..8]);
         Directory.CreateDirectory(tmp);
@@ -46,7 +47,7 @@ public static class SelfCheck
         catch (Exception e)
         {
             fail++;
-            lines.Add("FAIL  selfcheck crashed  — " + e);
+            lines.Add("FAIL  selfcheck crashed  | " + e);
         }
 
         lines.Add($"\n{pass} passed, {fail} failed, {skip} skipped");
@@ -94,6 +95,7 @@ public static class SelfCheck
             var f = Path.Combine(AppContext.BaseDirectory, "lang", code + ".js");
             var txt = File.ReadAllText(f);
             var json = txt[txt.IndexOf('{')..(txt.LastIndexOf('}') + 1)];
+            json = System.Text.RegularExpressions.Regex.Replace(json, @",\s*}$", "}"); // tệp dịch có dấu phẩy cuối
             return JsonNode.Parse(json)!.AsObject().Count;
         }
         catch { return 0; }
@@ -149,8 +151,9 @@ public static class SelfCheck
         Check(back is { Messages.Count: 2 } && back.Messages[1].Content == "hi", "chat saved and reloaded");
         Check(AiStore.State.Chats.Any(c => c.Id == chat.Id), "chat listed in metadata");
 
-        AiStore.Delete(chat.Id);
+        AiStore.DeleteChat(chat.Id);
         Check(AiStore.State.Chats.All(c => c.Id != chat.Id), "chat deleted");
+        Check(!File.Exists(Path.Combine(Store.DataDir, "ai", "chats", chat.Id + ".json")), "chat file removed");
 
         // xuất cài đặt không được chứa khoá
         var exported = JsonSerializer.Serialize(Store.Settings);
