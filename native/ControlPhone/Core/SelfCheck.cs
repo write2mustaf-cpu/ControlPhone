@@ -52,7 +52,6 @@ public static class SelfCheck
             StreamChecks();
             BackupChecks();
             ShortcutChecks();
-            BatchChecks();
             SupportChecks();
         }
         catch (Exception e)
