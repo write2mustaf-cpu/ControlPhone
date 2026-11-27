@@ -3,6 +3,28 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.9.0 — Back up everything that is yours
+
+### Full user-data backup / restore
+The old export covered settings only: after reinstalling, 50 named and grouped phones came back as "Phone 1…50". Now
+*Settings → Export / import settings* offers **Back up all data…** and **Restore from a backup…**.
+
+- `Core/UserBackup.cs`: one ZIP with `backup.json` (manifest: app, version, date, counts, `apiKeys: false`), `data.json`
+  (device metadata incl. Wi-Fi serials, groups, next number, settings, theme/language/tile width/sort/hide-offline, AI
+  options) and `chats/<id>.json` (conversation history in the exact format `AiStore` writes).
+- **No API keys, ever**: the backup never reads `ai.json`, and a check asserts no `KeyProtected`/`sk-` text can appear.
+- Restore merges instead of overwriting: phones match by serial, groups are unioned, `NextNum` only grows, and
+  conversations already on the machine are skipped. Settings go through the same `SettingsSanitizer` as `config.json`.
+- Bad input is refused before anything is written: not a ZIP, missing manifest, wrong application, or a backup from a
+  newer format version.
+- The dialog reports what happened (`+N phones · +N groups · +N conversations`) and logs it to the operation log.
+
+### Verification
+- Self-check 196 → **213**: manifest counts and the `apiKeys: false` flag, device names and Wi-Fi serials, groups, UI prefs
+  and AI options surviving a round trip, chat history stored and read back, "no key material anywhere in the ZIP", ZIP
+  layout, merge rules (add missing, replace matching, union groups, never lower `NextNum`, skip existing chats), and
+  rejection of a non-ZIP file and of a backup from another application.
+
 ## 3.8.0 — Answers appear while they are written
 
 ### Streaming replies (the last big item of the original brief)

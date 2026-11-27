@@ -210,6 +210,14 @@ the operation log, and keeps your device names and numbers.
 - **Navigation bar visible in games on Android 10** — select the phones → right-click → ADB commands → *Hide 3-button bar for the current app*.
 - **No video in the browser** — use a recent Microsoft Edge or Google Chrome (WebCodecs required).
 
+### Backup and restore
+
+*Settings → Export / import settings* now also offers **Back up all data…** and **Restore from a backup…**. The ZIP holds
+phone names, numbers, groups, settings, UI preferences and the AI conversation history — never API keys (they are DPAPI
+encrypted per machine and stay there). Restoring merges instead of overwriting: phones are matched by serial, groups are
+unioned, the next device number never goes down, and conversations already on the machine are left alone. A file that is
+not a ControlPhone backup, or comes from a newer version, is refused before anything is written.
+
 ### Streaming answers
 
 When the provider supports server-sent events (OpenAI, Anthropic, Gemini and every OpenAI-compatible endpoint), the
