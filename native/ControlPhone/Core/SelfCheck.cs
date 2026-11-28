@@ -55,6 +55,7 @@ public static class SelfCheck
             ShortcutChecks();
             TypingChecks();
             ManualOrderChecks();
+            KeyboardChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -889,6 +890,30 @@ public static class SelfCheck
     }
 
     // ---------------- thông tin hỗ trợ ----------------
+    // ---------------- bàn phím PC: khôi phục bàn phím điện thoại ----------------
+    static void KeyboardChecks()
+    {
+        const string gboard = "com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME";
+        const string samsung = "com.samsung.android.honeyboard/.service.HoneyBoardService";
+        const string voice = "com.google.android.googlequicksearchbox/com.google.android.voicesearch.Ime";
+        var ours = PcKeyboard.Ime;
+
+        var order = PcKeyboard.RestoreOrder(samsung, [gboard, samsung]);
+        Check(order[0] == samsung && order.Count == 2, "the remembered keyboard is restored first", string.Join(" > ", order));
+
+        // Người dùng gỡ bàn phím đã lưu: "ime set" thất bại im lặng và điện thoại ở lại với bàn phím không hiện trên màn hình.
+        var gone = PcKeyboard.RestoreOrder("com.example.uninstalled/.Ime", [gboard]);
+        Check(gone.Count == 1 && gone[0] == gboard, "a keyboard that no longer exists is not attempted", string.Join(" > ", gone));
+
+        Check(!PcKeyboard.RestoreOrder("null", [gboard]).Contains("null"), "'null' from settings is not a keyboard");
+        Check(!PcKeyboard.RestoreOrder(ours, [gboard, ours]).Contains(ours), "our own keyboard is never a restore target");
+        Check(PcKeyboard.RestoreOrder(null, [voice, gboard]).SequenceEqual([gboard, voice]), "a voice keyboard is the last resort");
+        Check(PcKeyboard.RestoreOrder(null, [gboard, gboard.ToUpperInvariant()]).Count == 1, "duplicates are removed regardless of case");
+        Check(PcKeyboard.RestoreOrder(null, []).Count == 0, "no other keyboard means an empty plan");
+        Check(PcKeyboard.RestoreOrder(null, [voice]).SequenceEqual([voice]), "voice is still better than no keyboard");
+        Check(PcKeyboard.RestoreOrder("  " + samsung + " ", [samsung, gboard])[0] == samsung, "whitespace around the saved name is ignored");
+    }
+
     static void SupportChecks()
     {
         Check(SupportInfo.Email.Contains('@'), "support email present", SupportInfo.Email);
