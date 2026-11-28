@@ -22,9 +22,9 @@ public partial class MainWindow
 
     void ShowToast(string msg, string kind, int ms)
     {
-        var tb = new TextBlock { Text = msg, TextWrapping = TextWrapping.Wrap, Foreground = Brushes.White, FontSize = 12.5 };
-        var b = new Border { CornerRadius = new CornerRadius(9), Padding = new Thickness(12, 9, 12, 9), Margin = new Thickness(0, 6, 0, 0), Child = tb, Opacity = 0 };
-        b.Background = kind switch { "ok" => new SolidColorBrush(Color.FromRgb(0x1E, 0x7A, 0x4C)), "err" => new SolidColorBrush(Color.FromRgb(0xA8, 0x3A, 0x38)), _ => new SolidColorBrush(Color.FromRgb(0x2B, 0x31, 0x40)) };
+        var tb = new TextBlock { Text = msg, TextWrapping = TextWrapping.Wrap, Foreground = Brushes.White, FontSize = Theme.FsBody };
+        var b = new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(13, 9, 13, 9), Margin = new Thickness(0, 6, 0, 0), Child = tb, Opacity = 0 };
+        b.Background = Theme.Brush(kind switch { "ok" => "ToastOk", "err" => "ToastErr", _ => "ToastInfo" });
         b.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 12, ShadowDepth = 2, Opacity = 0.35 };
         b.MouseLeftButtonUp += (_, _) => ToastList.Items.Remove(b);
         ToastList.Items.Add(b);
