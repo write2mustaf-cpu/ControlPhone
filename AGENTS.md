@@ -75,7 +75,7 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (404 checks as of 3.29.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (415 checks as of 3.30.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
 ## "The app exits by itself" — read this first
@@ -93,6 +93,21 @@ npm run i18n:check                  # key coverage per language
    through the `ControlPhone.Native.ShowWindow` named event, and says so if nobody answers); an exception thrown while building
    `MainWindow` (dialog + `Shutdown(1)` instead of a headless process); an exception on a background thread
    (`AppDomain.UnhandledException` shows a dialog when `IsTerminating`).
+
+## A frozen tile heals itself
+`Core/StreamWatchdog.Decide(online, video, msSinceProgress, attempts, msSinceRestart)` is the whole policy, pure and tested:
+< 2.5 s → `None`; then `KeyFrame`; past 6 s → `Reset` (wake the decoder + keyframe), up to `MaxAttempts` (3); then
+`Restart` — at most once per `RestartCooldownMs` (60 s). `DeviceManager.WatchTick` applies it; `RestartThumb` keeps the old
+session answering touches until the new one runs (same hand-over as `SyncThumbMode`) and writes one line to that phone's log.
+Before 3.30.0 the tracker asked three times and then **gave up** — the tile kept an old frame, the dot stayed green, and a dead
+stream looked like a still phone. Only the thumb stream is watched; the HQ (zoomed) stream is not yet.
+
+## AI streaming: a cut answer is still an answer
+`AiClient.ChatStreamAsync` keeps whatever text arrived when the stream breaks (timeout, dropped socket) and returns it with
+`AiReply.Incomplete = true`; only a break *before any text* returns null, which is the one case where the caller retries with
+the plain call. Half-received tool calls are dropped on purpose — their JSON may be truncated. `AiAgent` appends a visible
+"answer was cut off" line so a partial reply cannot be mistaken for a complete one. Never re-send a whole request because the
+stream ended early: that is the user's money.
 
 ## Data files
 - Settings: `data/config.json` (shared with the web build), UI prefs: `data/native-ui.json` — read `Store.UiFilePath`,

@@ -159,7 +159,7 @@ public sealed class PhoneDevice : INotifyPropertyChanged
     internal CancellationTokenSource? RestartCts;
     internal int InfoBusy, ProbeFails;
     internal bool Visible = true;      // ô đang nằm trong vùng nhìn thấy (ngoài vùng: không giải mã)
-    internal long WatchSince, WatchFrames; internal bool WatchKf; internal int WatchResets; internal bool Watching;
+    internal long WatchSince, WatchFrames, WatchRestart; internal bool WatchKf; internal int WatchResets; internal bool Watching;
 
     // phiên nhận điều khiển: phiên lưới; trong lúc nó đang được thay (chuyển chế độ) thì phiên cũ vẫn giữ điều khiển; rồi tới phiên màn hình lớn
     public ScrcpySession? ControlSession => Thumb is { Running: true } t ? t : PrevThumb is { Running: true } p ? p : Hq is { Running: true } h ? h : null;

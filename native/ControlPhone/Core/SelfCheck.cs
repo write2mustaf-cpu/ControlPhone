@@ -49,6 +49,7 @@ public static class SelfCheck
             BatchChecks();
             DiagChecks();
             SafeModeChecks();
+            WatchdogChecks();
             DeviceLogChecks();
             StreamChecks();
             BackupChecks();
@@ -728,6 +729,32 @@ public static class SelfCheck
             "a stream that broke before any text still falls back to the plain call");
         Check(new Ai.AiReply { Text = "x", Incomplete = true }.Incomplete && new Ai.AiReply { Text = "x" }.Ok,
             "a complete reply is not marked incomplete");
+    }
+
+    // ---------------- tự phục hồi luồng lưới ----------------
+    static void WatchdogChecks()
+    {
+        // khung vẫn chảy: không làm gì
+        Check(StreamWatchdog.Decide(true, true, 200, 0, 0) == RecoveryStep.None, "a live stream needs no recovery");
+        // chưa tới ngưỡng 2,5 giây
+        Check(StreamWatchdog.Decide(true, true, 2400, 0, long.MaxValue) == RecoveryStep.None, "a short gap is not a stall", "2400 ms");
+        // đứng quá 2,5 giây, chưa xin lần nào → xin keyframe
+        Check(StreamWatchdog.Decide(true, true, 2600, 0, 0) == RecoveryStep.KeyFrame, "a 2.6 s gap asks for a keyframe");
+        // đã xin keyframe, còn trong 6 giây → chờ
+        Check(StreamWatchdog.Decide(true, true, 3000, 1, 0) == RecoveryStep.Wait, "after asking, it waits before pushing harder");
+        // quá 6 giây và còn lượt → đánh thức bộ giải mã
+        Check(StreamWatchdog.Decide(true, true, 6500, 1, 0) == RecoveryStep.Reset, "a 6.5 s gap wakes the decoder");
+        // hết lượt (3) và chưa từng dựng lại → dựng lại phiên
+        Check(StreamWatchdog.Decide(true, true, 9000, 3, long.MaxValue) == RecoveryStep.Restart, "after three attempts the session is rebuilt");
+        // vừa dựng lại 10 giây trước → không đập lại
+        Check(StreamWatchdog.Decide(true, true, 9000, 3, 10_000) == RecoveryStep.Wait, "no rebuild within the one-minute cooldown");
+        // đủ một phút → được phép dựng lại
+        Check(StreamWatchdog.Decide(true, true, 90_000, 6, StreamWatchdog.RestartCooldownMs) == RecoveryStep.Restart, "the cooldown expires after a minute");
+        // máy mất kết nối / ô không có hình: không phải việc của bộ theo dõi khung
+        Check(StreamWatchdog.Decide(false, true, 9999, 9, long.MaxValue) == RecoveryStep.Wait, "an offline phone is not a stalled stream");
+        Check(StreamWatchdog.Decide(true, false, 9999, 9, long.MaxValue) == RecoveryStep.Wait, "a control-only tile has no frames to stall");
+        Check(StreamWatchdog.RestartCooldownMs >= 30_000 && StreamWatchdog.MaxAttempts >= 2,
+            "recovery is patient enough not to hammer a broken phone", $"{StreamWatchdog.MaxAttempts} attempts, {StreamWatchdog.RestartCooldownMs / 1000} s");
     }
 
     // ---------------- nhật ký riêng của từng máy ----------------
