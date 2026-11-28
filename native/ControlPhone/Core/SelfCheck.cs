@@ -1143,6 +1143,32 @@ public static class SelfCheck
         Check(latest is { Code: "wifi" }, "the most recent failure wins", latest?.Code ?? "null");
         Check(Diagnostics.Analyse([]) == null, "an empty log produces no diagnosis");
 
+        // ---- 4b) nhật ký khởi động: thấy được ứng dụng chết ở mốc nào ----
+        var line = StartupTrace.Format(new DateTime(2026, 1, 2, 3, 4, 5, 678), 1234, "shown", "mode all");
+        Check(line == "2026-01-02 03:04:05.678 +1234 ms · shown · mode all", "a startup mark is timestamped and staged", line);
+        Check(StartupTrace.Format(DateTime.MinValue, 0, "begin") == "0001-01-01 00:00:00.000 +0 ms · begin",
+            "a mark without extra text has no trailing separator");
+        StartupTrace.Mark("selfcheck", "stage probe");
+        var tail = StartupTrace.Tail(5);
+        Check(tail.Length > 0 && tail[^1].EndsWith("· selfcheck · stage probe", StringComparison.Ordinal),
+            "the last stage can be read back for a crash report", tail.Length > 0 ? tail[^1] : "empty");
+        Check(tail[^1].Contains(" ms · ", StringComparison.Ordinal), "each line carries the elapsed time");
+
+        // ---- 4c) chẩn đoán khởi động tại chỗ (--doctor) ----
+        var facts = Core.Doctor.Collect();
+        var report = Core.Doctor.Report(facts);
+        Check(report.Length > 60 && report.Contains(facts.DataDir, StringComparison.Ordinal) && report.Contains(facts.Cores.ToString(), StringComparison.Ordinal),
+            "the doctor report carries the real machine facts", report.Split('\n').FirstOrDefault() ?? "");
+        var marks = StartupTrace.Tail(12);
+        Check(marks.Length > 0 && report.Contains(marks[^1], StringComparison.Ordinal), "the doctor report includes the latest startup marks");
+        Check(Core.Doctor.LooksUnhealthy(new DoctorFacts(0, 0, false, false, "", "", "", null, "")),
+            "an unwritable data folder counts as a problem", "no write access");
+        Check(facts.Cores > 0 && facts.DataWritable, "this machine can write its data folder", facts.DataWritable ? "yes" : "no");
+        var doctorFile = Path.Combine(Path.GetTempPath(), "cp-doctor-" + Environment.ProcessId + ".txt");
+        Check(Core.Doctor.Write(doctorFile) == doctorFile && File.Exists(doctorFile) && new FileInfo(doctorFile).Length > 100,
+            "the doctor saves its report to a file");
+        try { File.Delete(doctorFile); } catch { }
+
         // ---- 5) công cụ AI mới có mặt và có mô tả ----
         var host = new FakeHost();
         var tools = new Ai.AiToolHost(host);

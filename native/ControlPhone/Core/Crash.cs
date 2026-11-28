@@ -46,6 +46,12 @@ public static class Crash
             if (stack.Length > MaxStack) stack = stack[..MaxStack] + "…";
             if (stack.Length > 0) sb.AppendLine(stack);
         }
+        try
+        {
+            var tail = StartupTrace.Tail(8);
+            if (tail.Length > 0) sb.AppendLine("startup: " + string.Join(" | ", tail));
+        }
+        catch { }
         return Ai.AiSecret.Redact(sb.ToString().TrimEnd(), null);
     }
 
@@ -74,7 +80,20 @@ public static class Crash
             e.Handled = true; // giữ ứng dụng sống: một lỗi trong một khung không được làm mất cả phiên điều khiển
             try { ShowDialog(details); } catch { }
         };
-        AppDomain.CurrentDomain.UnhandledException += (_, e) => Report(e.ExceptionObject as Exception, "background");
+        // lỗi ở luồng nền: nếu nó sẽ giết tiến trình thì phải hiện thông báo — im lặng biến mất là kiểu hỏng tệ nhất
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            var details = Report(e.ExceptionObject as Exception, "background");
+            StartupTrace.Mark("fatal", details.Split('\n').FirstOrDefault() ?? "");
+            if (!e.IsTerminating) return;
+            try
+            {
+                MessageBox.Show(
+                    I18n.T("ControlPhone đã dừng vì một lỗi nội bộ. Chi tiết đã được ghi vào:") + "\n" + LogPath,
+                    "ControlPhone", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch { }
+        };
         TaskScheduler.UnobservedTaskException += (_, e) => { Report(e.Exception, "task"); e.SetObserved(); };
     }
 

@@ -3,6 +3,51 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.27.0 — "it exits by itself" is now answerable
+
+A user reported that on their laptop the installed app closes on its own. Nothing in it could say why: the startup sequence
+left no trace, a second launch exited silently when it could not find the first window, and an exception on a background
+thread wrote a log nobody sees and then took the process down.
+
+### 1. A startup trace
+
+`Core/StartupTrace.cs` appends one line per stage with the elapsed time:
+
+```
+13:41:02.118 +12 ms · begin · v3.27.0 · Windows 10.0.19045 · data C:\...\data
+13:41:02.140 +34 ms · pre-data
+13:41:02.191 +85 ms · store · 3 máy
+13:41:02.260 +154 ms · theme · vi/dark
+13:41:03.905 +1799 ms · shown · mode all
+13:41:11.902 +9796 ms · ready
+```
+
+The last line says where it stopped. No `exit` line at all means the process was killed (antivirus, driver, out of memory),
+not shut down. Every crash entry now ends with the last 8 marks, and the diagnostic bundle carries the file.
+
+### 2. The second launch no longer vanishes
+
+Opening the app while it is already running used to `Shutdown()` without a word when the first instance had no window handle
+yet. Now the first instance listens on a named event (`ControlPhone.Native.ShowWindow`) and shows itself; if nothing answers
+within 2.5 s the second launch says so instead of disappearing.
+
+### 3. Failures stay visible
+
+- `new MainWindow(...)` is wrapped: an exception there gives a dialog with the log path and `Shutdown(1)`, not an invisible
+  process.
+- `AppDomain.UnhandledException` shows a dialog when `IsTerminating` — a background-thread crash used to be a silent
+  disappearance.
+
+### 4. `ControlPhone.exe --doctor`
+
+Writes and shows `data/logs/doctor.txt`: version, Windows, .NET, cores, RAM, program folder, data folder and whether it is
+writable, FFmpeg load result, config error, recorded crash count, and the last 12 startup marks. It runs before any window is
+built, so it also works when the UI cannot open. No API keys, no phone names.
+
+### Verification
+- Self-check 382 → **391** (trace formatting, trace read-back, doctor facts/report/save, unhealthy-folder detection).
+- ar/en packs: 17 new strings (938 keys each, 0 missing).
+
 ## 3.26.0 — the budget also cuts the bits, and the app stops dying on a save
 
 3.25.0 divided the decode budget across open phones but left one thing out: the bitrate. A tile cut from 480p/15 to 384p/5
