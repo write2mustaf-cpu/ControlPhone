@@ -3,6 +3,42 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.28.0 — Windows keeps the receipt
+
+3.27.0 could say *where* the app stopped. When a process dies without any managed exception — an antivirus quarantine, a
+graphics driver fault, invalid memory — even that log stops at the last stage and says nothing about the cause. Windows
+already knows: it writes the faulting module and exception code into its own event log.
+
+### `Core/CrashForensics.cs`
+
+| Source | What it answers | How |
+|---|---|---|
+| Event log 1000 / 1026 | **which DLL faulted**, exception code, offset, time | `wevtutil qe Application /q:... /f:text`, no admin needed |
+| `%LOCALAPPDATA%\CrashDumps` | did Windows write a dump for us, and when | file listing |
+| `Get-MpThreatDetection` | was a file of ours quarantined | PowerShell, read-only |
+
+```
+2026-11-27T18:02:11.000 · ControlPhone.exe · module igd10iumd64.dll · code 0xc0000005 · offset 0x12f3a
+```
+
+That one line means "the Intel graphics driver crashed, not the app" — which is exactly the kind of laptop-only failure that
+looked like "it exits by itself".
+
+`Relevant()` decides what counts: `ControlPhone`, `scrcpy-server`, `adb.exe` — the last two because the app extracts them to
+temp, and an antivirus that quarantines `adb.exe` produces "the app cannot see any phone".
+
+### Where it shows up
+- `ControlPhone.exe --doctor` prints it and saves it in `data/logs/doctor.txt`.
+- The diagnostic bundle now contains `logs/forensics.txt` (secret-scrubbed like everything else).
+- Nothing is uploaded; the commands are read-only and time out after 4 s.
+
+### Verification
+- Self-check 391 → **399** (fault parsing keeps only our crashes, module + code + time, Defender filter, dump listing,
+  collect-never-throws). The parsers were run against a realistic `wevtutil` sample in the Linux harness first:
+  11 of 12 assertions passed, and the failing one was right — it showed the Defender filter ignored a quarantined `adb.exe`,
+  so `Relevant()` was widened.
+- ar/en packs: 4 new strings (944 keys each, 0 missing).
+
 ## 3.27.0 — "it exits by itself" is now answerable
 
 A user reported that on their laptop the installed app closes on its own. Nothing in it could say why: the startup sequence

@@ -36,6 +36,8 @@ public static class DiagBundle
         written.AddRange(Copy(zip, "logs/startup.log", StartupTrace.Path));
         written.AddRange(Copy(zip, "logs/crash.log", Crash.LogPath));
         written.AddRange(Copy(zip, "logs/crash.log.1", Crash.LogPath + ".1"));
+        // bằng chứng từ chính Windows: module gây lỗi, tệp kết xuất, lịch sử Defender
+        written.Add(Put(zip, "logs/forensics.txt", Scrub(CrashForensics.Report(CrashForensics.Collect()))));
         written.AddRange(Copy(zip, "settings/config.json", Path.Combine(data, "config.json")));
         // Tên thật của tệp tuỳ chọn giao diện là native-ui.json (Store.UiFilePath), không phải "ui.json" như bản cũ
         // ghi — nên gói chẩn đoán lặng lẽ thiếu đúng phần người dùng hay phàn nàn nhất: giao diện, ngôn ngữ, RTL.

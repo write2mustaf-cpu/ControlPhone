@@ -940,4 +940,8 @@ export default {
   "Số lỗi đã ghi: {0}": "عدد الأخطاء المسجلة: {0}",
   "Các mốc khởi động gần nhất:": "أحدث مراحل بدء التشغيل:",
   "Đã lưu / saved:": "حُفظ في:",
+  "Bản ghi lỗi của Windows": "سجلات أخطاء Windows",
+  "Số lần Windows ghi nhận ControlPhone bị lỗi": "عدد المرات التي سجّل فيها Windows تعطّل ControlPhone",
+  "Tệp kết xuất lỗi của Windows": "ملفات تفريغ الأعطال من Windows",
+  "Lần Windows Defender phát hiện ControlPhone": "مرات اكتشاف Windows Defender لـ ControlPhone",
 };
