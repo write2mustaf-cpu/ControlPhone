@@ -3,6 +3,31 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.18.0 — turning off the PC keyboard could leave a phone with no keyboard at all
+
+### The bug
+"PC keyboard" installs an invisible IME so the phone shows no on-screen keyboard. Turning the mode off restored the
+keyboard remembered in `Store.Meta(id).PrevIme` with a single `ime set`. If that keyboard had since been uninstalled — or
+renamed by a ROM update — `ime enable`/`ime set` fail silently, `DisableAsync` returned "could not restore", and the
+phone was left with *only* the invisible ControlPhone keyboard: no way to type anywhere, not even the phone's own
+settings, until the user found another ADB command. The fallback also only ever considered keyboards that were already
+enabled, so an installed-but-disabled Gboard was ignored.
+
+### The fix
+- `PcKeyboard.RestoreOrder(prev, available)` builds the restore order: the remembered keyboard first, **only if it still
+  exists**; then every other non-voice keyboard; voice ones last; duplicates and our own IME removed; `"null"` and blank
+  entries ignored. Pure and testable.
+- `DisableAsync` collects both `ime list -s` (enabled) and `ime list -a -s` (installed, possibly disabled), then tries
+  each candidate in order — enabling it first when needed — and only disables our IME once another keyboard is confirmed
+  active.
+- When nothing can be restored, the ControlPhone keyboard is deliberately **kept enabled** (a phone without any keyboard
+  is worse than one with an invisible keyboard) and the message says so and tells the user to install a keyboard first.
+
+### Verification
+- Self-check 292 → **301**: remembered keyboard first; a saved keyboard that no longer exists is never attempted; `null`
+  ignored; our own IME never a target; voice last; case-insensitive duplicates removed; empty list → empty plan; voice
+  alone still accepted; surrounding whitespace ignored.
+
 ## 3.17.0 — the diagnostics bundle was missing the one file support needs
 
 ### The bug
