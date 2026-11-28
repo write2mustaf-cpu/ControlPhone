@@ -917,4 +917,5 @@ export default {
   "Tự chỉnh chất lượng theo hiệu năng thật của từng máy (hạ bitrate/fps/độ phân giải khi giải mã chậm hoặc CPU quá tải, tự nâng lại khi đã khoẻ)": "Tune quality from real per-phone performance (lower bitrate/fps/resolution when decoding is slow or the CPU is loaded, raise it again when healthy)",
   "Máy #{0}: hạ chất lượng lưới xuống {1}p/{2} fps — {3}": "Phone #{0}: grid quality lowered to {1}p/{2} fps — {3}",
   "đứng · {0:0.0} giây không có khung": "stalled · no frame for {0:0.0} s",
+  "Chia ngân sách giải mã theo số điện thoại đang mở (hàng trăm máy: mỗi máy nhẹ lại để máy tính còn kịp xử lý)": "Share the decode budget across open phones (with hundreds of tiles each one gets lighter so the PC keeps up)",
 };

@@ -31,12 +31,13 @@ public static class DeviceVideo
     {
         var plan = ThumbBase(m, s);
         if (m == null) return plan;
-        return plan with
+        var tuned = plan with
         {
             MaxSize = Tune(m.ThumbMaxSize, m.AutoMaxSize, plan.MaxSize, 160, 1920),
             BitRate = Tune(m.ThumbBitRate, m.AutoBitRate, plan.BitRate, 30_000, 20_000_000),
             MaxFps = Tune(m.ThumbFps, m.AutoFps, plan.MaxFps, 1, 60),
         };
+        return LoadBudget.Apply(tuned);
     }
 
     /// <summary>Máy đã được đặt tay thì giữ nguyên; chưa đặt thì dùng mức đã học (không cao hơn mức gốc).</summary>

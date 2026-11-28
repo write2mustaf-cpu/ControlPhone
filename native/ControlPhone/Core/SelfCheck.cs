@@ -1109,6 +1109,25 @@ public static class SelfCheck
         Check(DeviceVideo.ThumbBase(learned, settings) == new VideoPlan(480, 600_000, 15), "the base plan ignores what was learned");
         Check(AutoQuality.FloorOf(new VideoPlan(480, 600_000, 15)) == new QualityTarget(240, 150_000, 5), "the floor is a quarter of the base");
 
+        // ---- 3b) ngân sách giải mã chia theo số máy đang mở ----
+        Check(LoadBudget.SharePerStream(1, 12) == 540_000_000, "one stream on 12 cores gets the whole budget",
+            LoadBudget.SharePerStream(1, 12).ToString());
+        Check(LoadBudget.SharePerStream(300, 12) == 1_800_000, "300 streams share the same budget", LoadBudget.SharePerStream(300, 12).ToString());
+        Check(LoadBudget.PixelsPerSecond(480, 15) == 1_944_000, "cost is measured in pixels per second", LoadBudget.PixelsPerSecond(480, 15).ToString());
+        var plenty = new VideoPlan(480, 600_000, 15);
+        Check(LoadBudget.Fit(plenty, 540_000_000) == plenty, "a big budget cuts nothing");
+        var crowded = LoadBudget.Fit(plenty, 1_800_000);
+        Check(crowded.MaxSize == 480 && crowded.MaxFps == 12, "300 phones: 15 fps becomes 12, not a slideshow", crowded.ToString());
+        var starved = LoadBudget.Fit(plenty, 500_000);
+        Check(starved.MaxSize == 384 && starved.MaxFps == 5, "a tiny share cuts first fps then size", starved.ToString());
+        var clamped = LoadBudget.Fit(plenty, 1);
+        Check(clamped.MaxSize == 240 && clamped.MaxFps == 5, "the budget never goes below 240p/5 fps", clamped.ToString());
+        LoadBudget.SetActive(300, 12);
+        var shared = LoadBudget.Apply(new VideoPlan(720, 2_000_000, 30));
+        Check(shared.MaxSize == 480 && shared.MaxFps == 11, "opening a stream obeys the current share", shared.ToString());
+        LoadBudget.SetActive(0, 12);
+        Check(LoadBudget.Apply(new VideoPlan(720, 2_000_000, 30)) == new VideoPlan(720, 2_000_000, 30), "no streams means no cap");
+
         // ---- 4) chẩn đoán từ nhật ký ----
         var key = Diagnostics.Analyse(["adb: unauthorized", "device unauthorized"]);
         Check(key is { Code: "unauthorized" } && key.Hits == 2, "an unaccepted ADB key is recognised", key?.Code ?? "null");

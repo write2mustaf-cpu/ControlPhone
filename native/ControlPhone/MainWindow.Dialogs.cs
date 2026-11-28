@@ -465,6 +465,7 @@ public partial class MainWindow
         var swEnc = d.AddCheck("Lưới dùng bộ mã hoá phần mềm trên điện thoại (mặc định: bộ mã hoá phần cứng, tự chọn theo danh sách encoder của máy)", s.SoftwareEncoder);
         var autoQ = d.AddCheck("Tự chỉnh chất lượng theo hiệu năng thật của từng máy (hạ bitrate/fps/độ phân giải khi giải mã chậm hoặc CPU quá tải, tự nâng lại khi đã khoẻ)", s.AutoQuality);
         var showPerf = d.AddCheck("Hiện số đo trên tiêu đề mỗi ô: khung/giây · kbps · ms giải mã", s.ShowPerf);
+        var budget = d.AddCheck("Chia ngân sách giải mã theo số điện thoại đang mở (hàng trăm máy: mỗi máy nhẹ lại để máy tính còn kịp xử lý)", s.LoadBudget);
         var screenOff = d.AddCheck("Tự tắt màn hình điện thoại khi kết nối (vẫn xem & điều khiển được, tiết kiệm pin — thoát app màn hình tự bật lại)", s.ScreenOffOnConnect);
         var powerOn = d.AddCheck("Đánh thức điện thoại khi kết nối", s.PowerOnConnect);
         var autoWifi = d.AddCheck("Tự kết nối lại các máy WiFi đã từng kết nối", s.AutoReconnectWifi);
@@ -504,6 +505,7 @@ public partial class MainWindow
             s.SoftwareEncoder = swEnc.IsChecked == true;
             var autoQBefore = s.AutoQuality;
             s.AutoQuality = autoQ.IsChecked == true; s.ShowPerf = showPerf.IsChecked == true;
+            s.LoadBudget = budget.IsChecked == true;
             if (autoQBefore && !s.AutoQuality) AutoQuality.ForgetAll();
             s.FocusViewer = focus.IsChecked == true;
             s.LanAuto = lanAuto.IsChecked == true; s.LanPorts = string.Join(",", DeviceManager.ParsePorts(lanPorts.Text));

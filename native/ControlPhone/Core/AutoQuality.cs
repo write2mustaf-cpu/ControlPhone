@@ -38,11 +38,12 @@ public static class AutoQuality
         return cpuLoad;
     }
 
-    public static QualityGovernor? Governor(PhoneDevice d)
+    public static QualityGovernor? Governor(PhoneDevice d, int streams)
     {
         if (d.ThumbDecoder == null) return null;
         var meta = Store.MetaOrNull(d.Id);
-        var basePlan = DeviceVideo.ThumbBase(meta, Store.Settings);
+        // trần = mức người dùng đặt, nhưng không vượt phần ngân sách giải mã mà máy tính chia cho từng luồng
+        var basePlan = LoadBudget.Apply(DeviceVideo.ThumbBase(meta, Store.Settings));
         lock (Gate)
         {
             if (Governors.TryGetValue(d.Id, out var entry) && entry.Base == basePlan) return entry.Gov;
@@ -63,15 +64,15 @@ public static class AutoQuality
         Math.Max(5, p.MaxFps / 3));
 
     /// <summary>Một bước cho một máy. Trả về null khi tắt tính năng, chưa đủ mẫu, hoặc không có gì đổi.</summary>
-    public static QualityDecision? Observe(PhoneDevice d, long nowMs) => Observe(d, nowMs, CpuLoad());
+    public static QualityDecision? Observe(PhoneDevice d, long nowMs) => Observe(d, nowMs, CpuLoad(), 1);
 
     /// <summary>Như trên nhưng dùng mức tải CPU đã lấy sẵn cho cả nhịp (300 máy = 1 lần đọc, không phải 300).</summary>
-    public static QualityDecision? Observe(PhoneDevice d, long nowMs, double cpu)
+    public static QualityDecision? Observe(PhoneDevice d, long nowMs, double cpu, int streams)
     {
         if (!Store.Settings.AutoQuality) return null;
         var stats = d.ThumbDecoder?.Stats;
         var meta = Store.MetaOrNull(d.Id);
-        var gov = Governor(d);
+        var gov = Governor(d, streams);
         if (stats == null || meta == null || gov == null) return null;
         var snap = stats.Snapshot(nowMs);
         if (snap.Frames < 30) return null;                     // chưa đủ mẫu để kết luận
@@ -106,7 +107,7 @@ public static class AutoQuality
 
     public static string Describe(PhoneDevice d)
     {
-        var gov = Governor(d);
+        var gov = Governor(d, 1);
         if (gov == null) return "";
         var c = gov.Current;
         return $"{c.MaxSize}p · {c.MaxFps} fps · {c.BitRate / 1000} kbps — {gov.LastReason}";

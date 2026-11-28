@@ -45,6 +45,8 @@ public sealed class Settings
     public string ScreenshotDir { get; set; } = "";
     /// <summary>Tự chỉnh chất lượng lưới theo hiệu năng thật của từng máy (hạ bitrate/fps/độ phân giải khi máy hoặc PC quá tải).</summary>
     public bool AutoQuality { get; set; } = true;
+    /// <summary>Chia ngân sách giải mã theo số điện thoại đang mở (300 máy thì mỗi máy nhẹ lại để PC còn kịp).</summary>
+    public bool LoadBudget { get; set; } = true;
     /// <summary>Hiện số đo (fps · kbps) trên tiêu đề mỗi ô điện thoại.</summary>
     public bool ShowPerf { get; set; } = true;
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
