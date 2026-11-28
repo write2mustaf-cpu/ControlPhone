@@ -127,6 +127,9 @@ public static class Store
     public static readonly string DataDir = FindDataDir();
     static readonly string File = Path.Combine(DataDir, "config.json");
     static readonly string UiFile = Path.Combine(DataDir, "native-ui.json");
+
+    /// <summary>Tệp tuỳ chọn giao diện — một nguồn duy nhất cho cả việc ghi và gói chẩn đoán.</summary>
+    public static string UiFilePath => UiFile;
     static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
     static readonly object gate = new();
     static Timer? saveTimer, uiTimer;

@@ -3,6 +3,27 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.17.0 — the diagnostics bundle was missing the one file support needs
+
+### The bug
+`DiagBundle.Build` copied `data/ui.json`. The app writes `data/native-ui.json` (see `Store.UiFile`), so the copy always
+found nothing and was skipped silently — while the bundle's own `README.txt` promised "config.json and ui.json as they
+are on disk". Every diagnostics bundle ever sent was missing the theme, language, tile size, sort, filter and skipped
+version — exactly the settings behind layout, RTL and "the window looks wrong" reports.
+
+### The fix
+- The bundle now copies `Store.UiFilePath` (one source of truth for the name, exposed instead of a private field), and
+  `Build` takes an optional `dataDir` so the behaviour can be tested against real files.
+- `README.txt` is written **last, from the list of entries actually written**. A file that is missing is neither copied
+  nor promised; each line now says what the file is for.
+- The bundle README lists `settings/native-ui.json` with its contents (theme, language, tile size, sort, filter, skipped
+  version) instead of the vague `settings/*.json`.
+
+### Verification
+- Self-check 285 → **292**, seven new checks that write a real temp data folder and read the ZIP back: the UI file is
+  present, `settings/ui.json` is gone, the values (`light`, `ar`, `group:A`, `v9.9.9`) survive, `config.json` arrives with
+  `sk-…` masked, the README lists exactly the entries in the archive, and a missing UI file is neither copied nor listed.
+
 ## 3.16.0 — "Download ZIP" can no longer hand you a YAML file
 
 ### The bug (self-inflicted in 3.15.0)

@@ -302,8 +302,10 @@ the phone's own history instead of guessing.
 
 *Links & support → Diagnostics bundle → Export…* writes one ZIP you can attach to an email or send in the Telegram group:
 versions (app, Windows, .NET, ADB, FFmpeg), the phone list (numbers, labels, transport, Android — no serial numbers),
-the operation log, `crash.log` and your settings files. `ai.json` is excluded entirely and every text file is scrubbed of
-`sk-…`, `AIza…`, `Bearer …` and `?key=` tokens before it is written, so the bundle is safe to hand to someone else.
+the operation log, `crash.log`, `config.json` and `native-ui.json` (theme, language, tile size, sort, filter). `ai.json` is
+excluded entirely and every text file is scrubbed of `sk-…`, `AIza…`, `Bearer …` and `?key=` tokens before it is written,
+so the bundle is safe to hand to someone else. The bundle's own `README.txt` is generated from the files it actually
+contains, so it never promises something that is missing.
 
 ## ❤️ Support the project
 
