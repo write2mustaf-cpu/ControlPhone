@@ -155,5 +155,8 @@ jobs:
           $zip = "dist/${{ steps.ver.outputs.zip }}.zip"
           $setup = "dist/${{ steps.ver.outputs.setup }}.exe"
           $manifests = "dist/ControlPhone-v${{ steps.ver.outputs.version }}-manifests.zip"
-          $notes = if (Test-Path CHANGELOG.md) { Get-Content CHANGELOG.md -Raw } else { "ControlPhone $tag" }
-          gh release create $tag $zip $setup $manifests --title "ControlPhone $tag" --notes $notes --latest
+          # Ghi chú phát hành = phần của đúng phiên bản này. Truyền cả CHANGELOG qua dòng lệnh đã làm chết bước phát
+          # hành khi tệp vượt 32.767 ký tự của Windows ("The filename or extension is too long").
+          python tools/release_notes.py --version '${{ steps.ver.outputs.version }}' --changelog CHANGELOG.md --out dist/notes.md --tag $tag
+          if ($LASTEXITCODE -ne 0) { throw "release_notes.py failed ($LASTEXITCODE)" }
+          gh release create $tag $zip $setup $manifests --title "ControlPhone $tag" --notes-file dist/notes.md --latest
