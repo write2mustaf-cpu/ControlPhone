@@ -63,7 +63,10 @@ public static class AutoQuality
         Math.Max(5, p.MaxFps / 3));
 
     /// <summary>Một bước cho một máy. Trả về null khi tắt tính năng, chưa đủ mẫu, hoặc không có gì đổi.</summary>
-    public static QualityDecision? Observe(PhoneDevice d, long nowMs)
+    public static QualityDecision? Observe(PhoneDevice d, long nowMs) => Observe(d, nowMs, CpuLoad());
+
+    /// <summary>Như trên nhưng dùng mức tải CPU đã lấy sẵn cho cả nhịp (300 máy = 1 lần đọc, không phải 300).</summary>
+    public static QualityDecision? Observe(PhoneDevice d, long nowMs, double cpu)
     {
         if (!Store.Settings.AutoQuality) return null;
         var stats = d.ThumbDecoder?.Stats;
@@ -72,7 +75,7 @@ public static class AutoQuality
         if (stats == null || meta == null || gov == null) return null;
         var snap = stats.Snapshot(nowMs);
         if (snap.Frames < 30) return null;                     // chưa đủ mẫu để kết luận
-        var signal = new QualitySignal(snap.Fps, snap.DecodeMs, CpuLoad(), d.Transport != "wifi", 1);
+        var signal = new QualitySignal(snap.Fps, snap.DecodeMs, cpu, d.Transport != "wifi", 1, snap.AgeMs);
         var decision = gov.Step(signal, nowMs);
         if (!decision.Changed) return decision;
         var basePlan = DeviceVideo.ThumbBase(meta, Store.Settings);

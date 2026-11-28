@@ -3,6 +3,31 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.24.0 — the numbers stopped lying
+
+3.23.0 added the measurement layer. Using it for one round exposed three ways it reported things that were not true.
+
+### 1. A dead stream kept reporting its old bandwidth
+`StreamSnapshot` returned the last kbps forever, so a phone that had gone to sleep still showed `0 fps · 500 kbps` in its
+tile and told the AI the same. Now kbps reads **0 after 1.5 s of silence**, and the snapshot carries `AgeMs`, the age of the
+last frame. The tile shows `stalled · no frame for 6.0 s` instead of stale numbers.
+
+### 2. "Dropped" was really "waiting for a key frame"
+`H264Decoder` counted every frame skipped while waiting for a key frame as a dropped frame, so each reconnect painted a
+pile of fake drops on the tile. Those are now `Skipped()` and counted separately: dropped means lost, skipped means not
+shown yet.
+
+### 3. A sleeping phone was lowering its own quality
+With fps decaying to zero, the adaptive governor read the stall as overload and stepped the quality of a phone that was simply
+asleep down to the floor — blurry picture the moment it woke up. A stream with no frame for more than 3 s now produces no
+decision at all (`stream is stalled — quality left alone`).
+
+### Also
+- CPU load is sampled once per 2-second tick, not once per phone (300 phones = 300 process reads per tick).
+- AI `get_stream_stats` reports `stalled` with its skips instead of an invented fps.
+- Self-check 364 → **370**; the new maths was first run in the Linux harness (26 assertions, all green).
+- ar/en packs: 1 new string (917 keys each, 0 missing).
+
 ## 3.23.0 — measured performance, per-phone adaptive quality, log diagnosis
 
 This round delivers phase 1 (performance) and part of phase 4 (AI) of the big brief. **What is not here is listed at the

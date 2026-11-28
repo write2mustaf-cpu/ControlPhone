@@ -132,9 +132,12 @@ public sealed class PhoneDevice : INotifyPropertyChanged
             if (!Store.Settings.ShowPerf) return "";
             var p = Perf;
             if (p.Frames <= 0) return "";
+            // quá 3 giây không có khung: nói thẳng là đứng, không phô số cũ như đang chạy
+            if (p.AgeMs > 3000) return I18n.T("đứng · {0:0.0} giây không có khung", p.AgeMs / 1000);
             var text = $"{p.Fps:0} fps · {p.Kbps:N0} kbps";
             if (p.DecodeMs > 0) text += $" · {p.DecodeMs:0.0} ms";
             if (p.Dropped > 0) text += $" · {p.Dropped} drop";
+            if (p.Skipped > 0) text += $" · {p.Skipped} skip";
             return text;
         }
     }

@@ -309,10 +309,16 @@ public static class SelfCheck
     sealed class FakeHost : IAiHost
     {
         public string AppVersion => "selfcheck";
+        /// <summary>Máy thứ ba "đứng" (không có khung 6 giây) để kiểm tra cách báo cáo.</summary>
+        public bool AddStalled { get; init; }
         public IReadOnlyList<AiDeviceInfo> Devices() =>
         [
             new("d1", 1, "Phone One", "Pixel 7", "14", "online", "usb", 88, true, true, "192.168.1.20", ["Lab"], false, true, null),
             new("d2", 2, "Phone Two", "SM-G960F", "10", "offline", "wifi", null, null, false, "192.168.1.21", [], false, false, "offline"),
+            .. AddStalled
+                ? [new AiDeviceInfo("d3", 3, "Phone Three", "Redmi", "13", "online", "usb", 40, false, false, "", [], false, true, null,
+                    Fps: 0, Kbps: 0, DecodeMs: 0, Dropped: 0, Plan: "480p/15fps/600kbps", Skipped: 12, AgeMs: 6000)]
+                : Array.Empty<AiDeviceInfo>(),
         ];
         public IReadOnlyList<string> SelectedIds() => [];
         public void SetSelection(IEnumerable<string> ids) { }
@@ -1011,6 +1017,21 @@ public static class SelfCheck
         drop.Dropped(); drop.Dropped(2);
         Check(drop.Snapshot(0).Dropped == 3, "dropped frames are counted");
 
+        var silent = new Video.StreamStats();
+        silent.Bytes(4000, 0);
+        silent.Bytes(4000, 1000);
+        silent.Frame(480, 800, 3, 1000);
+        Check(Math.Abs(silent.Snapshot(1500).Kbps - 32) < 0.5, "bitrate is reported while bytes arrive", $"{silent.Snapshot(1500).Kbps:0.0}");
+        Check(silent.Snapshot(3000).Kbps == 0, "a silent stream stops claiming bandwidth", $"{silent.Snapshot(3000).Kbps:0.0}");
+        Check(Math.Abs(silent.Snapshot(4000).AgeMs - 3000) < 1, "the age of the last frame is reported", $"{silent.Snapshot(4000).AgeMs:0}");
+
+        var kinds = new Video.StreamStats();
+        kinds.Skipped(4);
+        kinds.Dropped(2);
+        var kindSnap = kinds.Snapshot(0);
+        Check(kindSnap.Skipped == 4 && kindSnap.Dropped == 2, "key-frame skips are counted apart from drops",
+            $"skip {kindSnap.Skipped} drop {kindSnap.Dropped}");
+
         // ---- 2) bộ điều chỉnh thích ứng ----
         QualityTarget Q(int size, int rate, int fps) => new(size, rate, fps);
         var steady = new QualityGovernor(Q(480, 600_000, 15), Q(240, 150_000, 5), Q(480, 600_000, 15));
@@ -1071,6 +1092,13 @@ public static class SelfCheck
         }
         Check(!above, "the governor never goes above its ceiling");
 
+        var stalledGov = new QualityGovernor(Q(480, 600_000, 15), Q(240, 150_000, 5), Q(480, 600_000, 15));
+        var stalledSignal = new QualitySignal(0, 90, 95, true, 1, AgeMs: 6000);
+        var stalled1 = stalledGov.Step(stalledSignal, 0);
+        var stalled2 = stalledGov.Step(stalledSignal, 1000);
+        Check(!stalled1.Changed && !stalled2.Changed && stalledGov.Current == Q(480, 600_000, 15),
+            "a stalled stream is not treated as overload", stalledGov.LastReason);
+
         // ---- 3) mức đã học được dùng khi mở luồng, không đè lên lựa chọn thủ công ----
         var settings = new Settings { ThumbMaxSize = 480, ThumbBitRate = 600_000, ThumbFps = 15 };
         var learned = new DeviceMeta { AutoMaxSize = 360, AutoBitRate = 300_000, AutoFps = 10 };
@@ -1106,6 +1134,10 @@ public static class SelfCheck
         Check(qualityCall.Ok && qualityCall.Content.Contains("8fps"), "a quality change reaches the host", qualityCall.Content);
         var misTarget = tools.ExecuteAsync("diagnose_device", "{\"device\":\"Phone\"}", CancellationToken.None).GetAwaiter().GetResult();
         Check(!misTarget.Ok, "an ambiguous phone name is refused, not guessed", misTarget.Summary);
+        var stalledTools = new Ai.AiToolHost(new FakeHost { AddStalled = true });
+        var stalledCall = stalledTools.ExecuteAsync("get_stream_stats", "{\"device\":\"3\"}", CancellationToken.None).GetAwaiter().GetResult();
+        Check(stalledCall.Ok && stalledCall.Content.Contains("stalled") && stalledCall.Content.Contains("12 skipped"),
+            "a stalled phone is reported as stalled, with its skips", stalledCall.Content);
     }
 
     // ---------------- cửa sổ hội thoại gửi cho nhà cung cấp AI ----------------

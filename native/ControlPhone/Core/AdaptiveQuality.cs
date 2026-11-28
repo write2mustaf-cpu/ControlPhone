@@ -4,7 +4,7 @@ namespace ControlPhone.Core;
 public sealed record QualityTarget(int MaxSize, int BitRate, int MaxFps);
 
 /// <summary>Số đo dùng để quyết định: luồng này đang chạy thế nào và máy tính đang chịu tải ra sao.</summary>
-public sealed record QualitySignal(double Fps, double DecodeMs, double CpuLoad, bool Usb, int Devices);
+public sealed record QualitySignal(double Fps, double DecodeMs, double CpuLoad, bool Usb, int Devices, double AgeMs = 0);
 
 /// <summary>Kết quả một bước: mức mới, lý do (để ghi nhật ký và cho trợ lý AI đọc), có đổi hay không.</summary>
 public sealed record QualityDecision(QualityTarget Target, string Reason, bool Changed);
@@ -31,6 +31,8 @@ public sealed class QualityGovernor
 
     public QualityDecision Step(QualitySignal s, long nowMs)
     {
+        // luồng đứng (máy ngủ, cáp lỏng) không phải "quá tải": hạ chất lượng lúc này chỉ làm hình mờ khi máy tỉnh lại
+        if (s.AgeMs > 3000) return new QualityDecision(Current, "stream is stalled — quality left alone", false);
         var frameMs = 1000.0 / Math.Max(1, Current.MaxFps);
         var fpsLow = s.Fps > 0 && s.Fps < Current.MaxFps * 0.7;
         var slowDecode = s.DecodeMs > frameMs * 0.6;

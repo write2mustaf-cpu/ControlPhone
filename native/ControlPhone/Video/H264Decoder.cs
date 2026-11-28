@@ -86,7 +86,7 @@ public sealed unsafe class H264Decoder : IDisposable
     public void Feed(bool isConfig, bool isKey, byte[] data)
     {
         if (isConfig) { config = data; waitKey = true; return; }
-        if (waitKey && !isKey) { Stats.Dropped(); return; }
+        if (waitKey && !isKey) { Stats.Skipped(); return; }
         Stats.Bytes(data.Length);
         var started = System.Diagnostics.Stopwatch.GetTimestamp();
         var before = Output.Frames;
