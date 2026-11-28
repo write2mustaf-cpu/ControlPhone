@@ -63,7 +63,7 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (391 checks as of 3.27.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (399 checks as of 3.28.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
 ## "The app exits by itself" — read this first
@@ -72,8 +72,12 @@ npm run i18n:check                  # key coverage per language
    means the process was killed (antivirus, driver, OOM), not shut down.
 2. `ControlPhone.exe --doctor` writes `data/logs/doctor.txt`: version, OS, .NET, cores, RAM, whether the data folder is
    writable, whether FFmpeg loads, config errors, crash count, the startup marks. No API keys, no phone names.
-3. `Core/Crash.cs` writes `data/logs/crash.log`; every entry ends with the last 8 startup marks. `DiagBundle` carries both.
-4. Silent exits that were real bugs and are fixed: a second instance with no reachable window (now signals the first instance
+3. `Core/CrashForensics.cs` reads Windows' own records — event log 1000 (Application Error: faulting module + exception code)
+   and 1026 (.NET Runtime), `%LOCALAPPDATA%\CrashDumps\*ControlPhone*.dmp`, and `Get-MpThreatDetection` — filtered by
+   `Relevant()` (ControlPhone, scrcpy-server, adb.exe). Shown in `--doctor` and saved as `logs/forensics.txt` in the bundle.
+   A faulting module name (`igd10iumd64.dll`, `nvoglv64.dll`, an AV shim) is the answer when nothing managed was thrown.
+4. `Core/Crash.cs` writes `data/logs/crash.log`; every entry ends with the last 8 startup marks. `DiagBundle` carries both.
+5. Silent exits that were real bugs and are fixed: a second instance with no reachable window (now signals the first instance
    through the `ControlPhone.Native.ShowWindow` named event, and says so if nobody answers); an exception thrown while building
    `MainWindow` (dialog + `Shutdown(1)` instead of a headless process); an exception on a background thread
    (`AppDomain.UnhandledException` shows a dialog when `IsTerminating`).

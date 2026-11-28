@@ -48,6 +48,7 @@ public static class Doctor
         if (!string.IsNullOrEmpty(f.ConfigError)) sb.AppendLine(I18n.T("Cấu hình lỗi: {0}", f.ConfigError));
         sb.AppendLine(I18n.T("Tệp lỗi và nhật ký: {0}", Crash.LogPath));
         sb.AppendLine(I18n.T("Số lỗi đã ghi: {0}", CountCrashes()));
+        sb.AppendLine(CrashForensics.Report(CrashForensics.Collect()));
         sb.AppendLine(I18n.T("Các mốc khởi động gần nhất:"));
         foreach (var m in StartupTrace.Tail(12)) sb.AppendLine("  " + m);
         return sb.ToString().TrimEnd();

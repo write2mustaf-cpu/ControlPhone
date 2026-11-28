@@ -1169,6 +1169,30 @@ public static class SelfCheck
             "the doctor saves its report to a file");
         try { File.Delete(doctorFile); } catch { }
 
+        // ---- 4d) bằng chứng từ chính Windows (nhật ký sự kiện, Defender, dump) ----
+        const string logSample = "Event[0]:\r\n  Date: 2026-11-27T18:02:11.000\r\n  Event ID: 1000\r\n" +
+            "Faulting application name: ControlPhone.exe\r\nFaulting module name: igd10iumd64.dll\r\n" +
+            "Exception code: 0xc0000005\r\n\r\n" +
+            "Event[1]:\r\n  Date: 2026-11-27T18:05:00.000\r\nFaulting application name: notepad.exe\r\n" +
+            "Faulting module name: uxtheme.dll\r\n\r\n";
+        var faults = CrashForensics.ParseEventLog(logSample);
+        Check(faults.Count == 1, "another program's crash is not reported as ours", faults.Count.ToString());
+        Check(faults[0].Module == "igd10iumd64.dll" && faults[0].Code == "0xc0000005",
+            "the faulting module and exception code are kept", faults[0].Line);
+        Check(faults[0].When.StartsWith("2026-11-27T18:02", StringComparison.Ordinal), "the crash time is kept", faults[0].When);
+        Check(CrashForensics.ParseEventLog("") .Count == 0 && CrashForensics.ParseEventLog(null).Count == 0,
+            "empty evidence is not a fault");
+        Check(CrashForensics.ParseDefender("2026-11-27 | C:\\Temp\\adb.exe | 1\n2026-11-27 | C:\\x\\other.zip | 2").Count == 1,
+            "a quarantined adb.exe counts, an unrelated file does not");
+        Check(CrashForensics.Relevant("C:\\Temp\\scrcpy-server") && !CrashForensics.Relevant("C:\\x\\other.zip"),
+            "the app's own extracted tools are relevant, other files are not");
+        var forensicsReport = CrashForensics.Report((faults, ["C:\\x\\ControlPhone.exe | 1"], ["ControlPhone.exe.1.dmp · 9 KB"]));
+        Check(forensicsReport.Contains("igd10iumd64.dll", StringComparison.Ordinal) && forensicsReport.Contains("dmp", StringComparison.Ordinal),
+            "the forensics report shows module, dump and detection", forensicsReport.Split('\n').Length.ToString());
+        var collected = CrashForensics.Collect();
+        Check(collected.Faults != null && collected.Detections != null && collected.Dumps != null,
+            "collecting Windows evidence never throws", $"{collected.Faults.Count} lỗi");
+
         // ---- 5) công cụ AI mới có mặt và có mô tả ----
         var host = new FakeHost();
         var tools = new Ai.AiToolHost(host);

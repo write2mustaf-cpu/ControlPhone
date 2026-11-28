@@ -940,4 +940,8 @@ export default {
   "Số lỗi đã ghi: {0}": "Recorded errors: {0}",
   "Các mốc khởi động gần nhất:": "Latest startup marks:",
   "Đã lưu / saved:": "saved:",
+  "Bản ghi lỗi của Windows": "Windows crash records",
+  "Số lần Windows ghi nhận ControlPhone bị lỗi": "Times Windows recorded a ControlPhone crash",
+  "Tệp kết xuất lỗi của Windows": "Crash dump files from Windows",
+  "Lần Windows Defender phát hiện ControlPhone": "Windows Defender detections of ControlPhone",
 };
