@@ -100,6 +100,41 @@ public static class SelfCheck
         I18n.Init("en");
         Check(I18n.T("Đóng") == "Close", "English sample string", I18n.T("Đóng"));
         Check(!I18n.IsRtl, "English is LTR");
+
+        // Toàn bộ gói dịch phải thật sự đã dịch: không giá trị nào trùng khoá, mọi câu tiếng Ả Rập phải có chữ Ả Rập,
+        // và không bản dịch nào được làm mất {0}/{1} (mất placeholder = mất dữ liệu người dùng khi hiện).
+        var arPack = Pack("ar");
+        Check(arPack.Count > 900, "Arabic pack is complete", arPack.Count + " keys");
+        Check(arPack.All(kv => kv.Value.Trim() != kv.Key.Trim()), "no Arabic value is left in Vietnamese");
+        Check(arPack.All(kv => System.Text.RegularExpressions.Regex.IsMatch(kv.Value, "[\u0600-\u06FF]")),
+            "every Arabic value contains Arabic script", arPack.Count.ToString());
+        var lost = arPack.Where(kv => Placeholders(kv.Key) != Placeholders(kv.Value)).Select(kv => kv.Key).Take(3).ToList();
+        Check(lost.Count == 0, "Arabic keeps every {n} placeholder", string.Join(" · ", lost));
+        var enPack = Pack("en");
+        Check(enPack.Count == arPack.Count && enPack.Where(kv => Placeholders(kv.Key) != Placeholders(kv.Value)).Count() == 0,
+            "English matches Arabic key for key", $"en={enPack.Count} ar={arPack.Count}");
+        I18n.Init("ar");
+        Check(I18n.T("Xuất cài đặt") == "تصدير الإعدادات" && I18n.T("bàn phím") == "لوحة المفاتيح",
+            "newest strings are translated", I18n.T("Xuất cài đặt") + " / " + I18n.T("bàn phím"));
+        Check(I18n.T("Thiếu tệp") == "ملف مفقود" && I18n.T("Lỗi mạng:") == "خطأ في الشبكة:",
+            "error messages are translated too", I18n.T("Lỗi mạng:"));
+        I18n.Init("en"); // các mục sau chạy bằng tiếng Anh như trước
+    }
+
+    static string Placeholders(string text) =>
+        string.Join(",", System.Text.RegularExpressions.Regex.Matches(text, @"\{\d+}").Select(m => m.Value).OrderBy(x => x));
+
+    /// <summary>Đọc thẳng tệp lang/&lt;mã&gt;.js (cùng định dạng I18n dùng) để kiểm tra toàn bộ gói, không chỉ vài câu mẫu.</summary>
+    static Dictionary<string, string> Pack(string code)
+    {
+        try
+        {
+            var txt = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "lang", code + ".js"));
+            var json = txt[txt.IndexOf('{')..(txt.LastIndexOf('}') + 1)];
+            json = System.Text.RegularExpressions.Regex.Replace(json, @",\s*}$", "}");
+            return JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? [];
+        }
+        catch { return []; }
     }
 
     static int CountKeys(string code)

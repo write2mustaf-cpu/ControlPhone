@@ -3,6 +3,32 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.19.0 — Arabic and English are now complete, and CI keeps them that way
+
+### The gap
+The app's source language is Vietnamese and every other language is a lookup table. The Arabic pack was missing 84 strings
+and so was English — and English is the fallback for every other language, so a German or Chinese user saw Vietnamese in
+those 84 places too. The misses were not exotic: *Export settings*, *Import settings*, *Diagnostic information*,
+*Connected:* / *Connection failed:* / *Network error:*, *update check*, the file-dialog filters, and the whole "PC
+keyboard" restore message added in 3.18.0.
+
+The extractor that reports this (`tools/i18n-native.js`) also counted 8 strings that are not sentences at all: fragments of
+interpolated strings (`)} máy mất kết nối`), a regex character class, a performance header and the already trilingual
+language label. Translating those would have been noise, and they kept the report permanently non-zero.
+
+### What changed
+- **84 strings translated into Arabic and English** (828 → 912 keys each), placeholders `{0}`/`{1}` preserved everywhere.
+- The extractor now skips `Core/SelfCheck.cs` (test fixtures such as `#1  Máy A  usb  online`) and non-sentence strings,
+  so the count means what it says.
+- `node tools/i18n-native.js --strict` exits non-zero when Arabic or English is incomplete, and the Windows workflow runs it
+  before the build — a new UI string can no longer ship untranslated in those two languages.
+- German, French and both Chinese packs still miss ~167 strings each; the tool prints that, but it does not fail the build.
+
+### Verification
+- Self-check 301 → **308**: the whole Arabic pack is checked at runtime — 912 keys, no value left equal to its Vietnamese
+  key, every value contains Arabic script, no `{n}` placeholder lost, English matches Arabic key for key, and the newest
+  strings (*Export settings*, *keyboard*, *Missing file*, *Network error:*) resolve to Arabic.
+
 ## 3.18.0 — turning off the PC keyboard could leave a phone with no keyboard at all
 
 ### The bug

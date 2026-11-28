@@ -52,6 +52,9 @@ jobs:
           -p:EnableWindowsTargeting=true -p:DebugType=none
           -o dist/ControlPhone
 
+      - name: Translation coverage (Arabic + English must be complete)
+        run: node tools/i18n-native.js --strict
+
       - name: Self-check (no phones required)
         shell: pwsh
         run: |
