@@ -41,6 +41,18 @@ Repository notes for AI agents working on ControlPhone (multi-phone Android cont
 - `tools/setup.js` — downloads scrcpy/adb into `vendor/` (gitignored, required before building the app).
 - `docs/` — user docs; `docs/ar/` Arabic guide.
 
+## Release discipline (learned the hard way)
+
+`<Version>` in `native/ControlPhone/ControlPhone.csproj` **is** the release number: the workflow reads it and names every
+asset from it. A tag whose number differs from the csproj produces a release whose assets carry the *old* name — v3.29.0 was
+published once with `-v3.28.0-` files because the bump step was skipped by a failing shell chain (`grep -c … && python …`).
+The workflow now throws when `refs/tags/vX.Y.Z` and the csproj disagree, and `tools/package_manifests.py` refuses any file
+under 5 MB or without `MZ`/`PK` magic, so a downloaded 404 page can never become a "verified" manifest hash.
+
+Order: bump csproj → build → PR → CI green → merge → `git tag -a vX.Y.Z` **on that merge commit** → push tag → wait for the
+release job → download and verify the assets → only then regenerate the Scoop bucket manifest. Verify `git show vX.Y.Z:...csproj`
+before tagging, not the working tree.
+
 ## Build / verify
 
 ```bash
@@ -63,7 +75,7 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (399 checks as of 3.28.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (404 checks as of 3.29.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
 ## "The app exits by itself" — read this first

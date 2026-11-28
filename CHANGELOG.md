@@ -3,6 +3,44 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.29.0 — a cut answer is still an answer
+
+Streaming exists so text appears as it arrives. But when a provider stopped mid-answer — timeout, dropped socket, laptop
+sleeping — `ChatStreamAsync` returned `null`, and the caller quietly re-sent **the whole request** through the non-streaming
+path. The text the user was reading vanished and came back, the request was billed twice, and a long answer could time out
+again.
+
+### What changed
+
+`StreamAccumulator.Partial()` returns what it has, flagged `AiReply.Incomplete`:
+
+```csharp
+catch { return acc.Partial(); }   // timeout or dropped socket
+```
+
+| Situation | Before | Now |
+|---|---|---|
+| broke after some text | text discarded, whole request re-sent | text kept, marked incomplete, no second request |
+| broke before any text | re-sent (correct) | unchanged — the only remaining fallback |
+| tool call half received | args could be truncated JSON | dropped: running a tool with half its arguments is worse than not running it |
+| what the user reads | a reply that looks complete | the text plus *"the answer was cut off — try again"* |
+
+`AiReply.Incomplete` lets `AiAgent` mark the reply in the transcript instead of guessing from the text.
+
+### Verification
+- Self-check 399 → **404**.
+- Parsers ran in a Linux harness first, **13/13**: SSE split across arbitrary chunks, CRLF, keep-alive comments, multi-line
+  `data:`, missing final blank line, OpenAI tool call split over two chunks, Anthropic Arabic text byte-exact, and the three
+  partial-reply cases.
+- ar/en packs: 1 new string (945 keys each, 0 missing).
+
+### Release repair (same round)
+
+The first v3.29.0 attempt shipped assets named `-v3.28.0-` because the version-bump command was skipped by a failing `&&`
+chain. Two guards now exist: the release workflow fails when the tag and the csproj disagree, and
+`tools/package_manifests.py` refuses files under 5 MB or without `MZ`/`PK` magic bytes. The bad release and tag were deleted;
+v3.29.0 was re-cut from the corrected commit and its assets verified.
+
 ## 3.28.0 — Windows keeps the receipt
 
 3.27.0 could say *where* the app stopped. When a process dies without any managed exception — an antivirus quarantine, a
