@@ -63,7 +63,7 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (379 checks as of 3.25.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (382 checks as of 3.26.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
 ## Data files
@@ -93,7 +93,11 @@ npm run i18n:check                  # key coverage per language
 - `Core/LoadBudget` is the only place that decides what a *group* of streams may cost: `PixelsPerSecond(size, fps)` is the
   cost unit, `SharePerStream(streams, cores)` the per-stream share, `Fit()` the reduction order (long side to 480 → fps →
   size, floor 240p/5 fps). `ActiveShare` is refreshed by the 2 s tick and applied inside `DeviceVideo.Thumb` and as the
-  governor's ceiling, so a new stream opens already inside the budget. Self-cleaning: `SetActive(0, …)` = no cap.
+  governor's ceiling, so a new stream opens already inside the budget. `Fit` also scales the bitrate with the pixel ratio
+  (floor `MinBitRate` = 120 kbps) — cutting the picture while keeping 600 kbps wastes USB on 300-phone rigs. Self-cleaning:
+  `SetActive(0, …)` = no cap; `MainWindow.NotifyBudget` tells the user once when the grid gets lighter.
+- `Store.Flush`/`FlushUi` run on a `Timer` thread: their bodies are wrapped in try/catch and record `Store.SaveError`, because
+  an exception there would terminate the process, not just fail a save.
 - UI: `PhoneDevice.PerfText` (fps · kbps · decode ms) in the tile header, refreshed by `RaisePerf()` so 300 tiles do not
   re-render every 2 s. AI tools: `get_stream_stats`, `diagnose_device`, `set_stream_quality`.
 

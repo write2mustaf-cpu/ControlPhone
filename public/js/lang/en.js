@@ -918,4 +918,5 @@ export default {
   "Máy #{0}: hạ chất lượng lưới xuống {1}p/{2} fps — {3}": "Phone #{0}: grid quality lowered to {1}p/{2} fps — {3}",
   "đứng · {0:0.0} giây không có khung": "stalled · no frame for {0:0.0} s",
   "Chia ngân sách giải mã theo số điện thoại đang mở (hàng trăm máy: mỗi máy nhẹ lại để máy tính còn kịp xử lý)": "Share the decode budget across open phones (with hundreds of tiles each one gets lighter so the PC keeps up)",
+  "Chia ngân sách giải mã cho {0} màn hình: mỗi màn hình {1}p · {2} fps · {3} kbps": "Decode budget shared across {0} screens: {1}p · {2} fps · {3} kbps each",
 };

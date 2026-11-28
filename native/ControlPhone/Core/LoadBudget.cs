@@ -12,6 +12,8 @@ public static class LoadBudget
 
     /// <summary>Mức tối thiểu vẫn nhìn được: 240p, 5 fps.</summary>
     public const int MinSize = 240, MinFps = 5;
+    /// <summary>Dưới mức này hình bắt đầu vỡ khối ở chuyển động — không hạ nữa.</summary>
+    public const int MinBitRate = 120_000;
 
     /// <summary>Ngân sách cho một luồng khi có <paramref name="streams"/> luồng trên <paramref name="cores"/> lõi.</summary>
     public static long SharePerStream(int streams, int cores) =>
@@ -38,11 +40,14 @@ public static class LoadBudget
         // hạ cạnh dài về 480 trước (mức lưới thông thường): giảm nửa số điểm ảnh mà không biến hình thành trình chiếu
         if (size > 480 && PixelsPerSecond(size, fps) > share) size = 480;
 
+        var before = PixelsPerSecond(want.MaxSize, want.MaxFps);   // so với mức người dùng muốn, không phải mức trung gian
         while (PixelsPerSecond(size, fps) > share && fps > MinFps) fps = Math.Max(MinFps, fps - Math.Max(1, fps / 4));
         while (PixelsPerSecond(size, fps) > share && size > MinSize) size = Math.Max(MinSize, size - Math.Max(8, size / 5));
         if (size % 2 != 0) size--;                                  // độ phân giải lẻ làm bộ mã hoá khó chịu
         if (size == want.MaxSize && fps == want.MaxFps) return want;
-        return want with { MaxSize = size, MaxFps = fps };
+        // bitrate đi theo số điểm ảnh: hình nhỏ hơn mà vẫn 600 kbps thì phí băng thông (300 máy = 180 Mbps vô ích)
+        var rate = (int)Math.Round(want.BitRate * (double)PixelsPerSecond(size, fps) / Math.Max(1, before) / 1000) * 1000;
+        return want with { MaxSize = size, MaxFps = fps, BitRate = Math.Clamp(rate, MinBitRate, want.BitRate) };
     }
 
     /// <summary>Ngân sách hiện tại cho mỗi luồng (0 = không giới hạn). Vòng điều chỉnh cập nhật khi số luồng đổi.</summary>

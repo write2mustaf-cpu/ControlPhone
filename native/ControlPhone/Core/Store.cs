@@ -261,11 +261,16 @@ public static class Store
         }
     }
 
+    /// <summary>Lỗi ghi gần nhất (null = không có). Chỉ để chẩn đoán, không chặn gì.</summary>
+    public static string? SaveError { get; private set; }
+
     public static void Flush()
     {
         if (saveBlocked) return; // cấu hình đọc lỗi lúc khởi động → không ghi đè dữ liệu thật
         string json;
-        lock (gate) json = JsonSerializer.Serialize(State, Json);
+        // chạy trên Timer: một ngoại lệ ở đây sẽ giết cả tiến trình, nên bắt hết và ghi lại lý do
+        try { lock (gate) json = JsonSerializer.Serialize(State, Json); }
+        catch (Exception e) { SaveError = e.Message; return; }
         try
         {
             if (System.IO.File.Exists(File))
@@ -283,7 +288,8 @@ public static class Store
     {
         if (uiBlocked) return;
         string json;
-        lock (gate) json = JsonSerializer.Serialize(Ui, Json);
+        try { lock (gate) json = JsonSerializer.Serialize(Ui, Json); }
+        catch (Exception e) { SaveError = e.Message; return; }
         WriteAtomic(UiFile, json);
     }
 

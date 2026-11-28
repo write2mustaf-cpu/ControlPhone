@@ -1122,9 +1122,13 @@ public static class SelfCheck
         Check(starved.MaxSize == 384 && starved.MaxFps == 5, "a tiny share cuts first fps then size", starved.ToString());
         var clamped = LoadBudget.Fit(plenty, 1);
         Check(clamped.MaxSize == 240 && clamped.MaxFps == 5, "the budget never goes below 240p/5 fps", clamped.ToString());
+        Check(crowded.BitRate == 480_000, "the bitrate follows the pixels cut", crowded.BitRate.ToString());
+        Check(starved.BitRate == 128_000, "a smaller picture also needs fewer bits", starved.BitRate.ToString());
+        Check(clamped.BitRate == 120_000, "the bitrate has a floor of 120 kbps", clamped.BitRate.ToString());
         LoadBudget.SetActive(300, 12);
         var shared = LoadBudget.Apply(new VideoPlan(720, 2_000_000, 30));
-        Check(shared.MaxSize == 480 && shared.MaxFps == 11, "opening a stream obeys the current share", shared.ToString());
+        Check(shared.MaxSize == 480 && shared.MaxFps == 11 && shared.BitRate == 326_000,
+            "opening a stream obeys the current share, bits included", shared.ToString());
         LoadBudget.SetActive(0, 12);
         Check(LoadBudget.Apply(new VideoPlan(720, 2_000_000, 30)) == new VideoPlan(720, 2_000_000, 30), "no streams means no cap");
 
