@@ -3,6 +3,39 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.25.0 — the grid has a budget, not just per-phone luck
+
+Every phone adapted on its own, so nothing limited what the *whole grid* costs. 300 phones at 480p/15 fps is 300 × 1.94 M
+pixels/s ≈ 580 Mpixel/s of YUV→BGRA conversion: the PC simply cannot, and the first thing to go is the UI. Each phone was
+individually "healthy" while the machine drowned.
+
+### What is new
+`Core/LoadBudget` divides one decode budget across the streams that are actually open:
+
+```
+cost   = width × height × fps        (480p/15 = 1.94 Mpixel/s)
+share  = cores × 45 Mpixel/s ⁄ open streams
+order  = long side down to 480  →  fps down  →  resolution down   (floor 240p / 5 fps)
+```
+
+| Open streams (12 cores) | Per stream | 480p/15 opens as |
+|---|---|---|
+| 1 | 540 Mpixel/s | 480p/15 — untouched |
+| 300 | 1.8 Mpixel/s | 480p/12 |
+| 300, a 720p/30 request | 1.8 Mpixel/s | 480p/11 |
+| starved | 0.5 Mpixel/s | 384p/5 |
+| almost nothing | ~0 | 240p/5 (never below) |
+
+- Applied in two places: when a stream opens (`DeviceVideo.Thumb`) and as the **ceiling** of the adaptive governor, so
+  quality can never climb back above what the machine can decode.
+- Recomputed once per 2 s tick from the real number of live decoders — `LoadBudget.SetActive(streams, cores)`.
+- New setting (on by default): "share the decode budget across open phones".
+
+### Verification
+- Self-check 370 → **379**; the arithmetic was run in the Linux harness first (42 assertions, 0 failed).
+- CI on `windows-latest`: build, publish, installer + portable ZIP, install → `--selfcheck` → uninstall.
+- ar/en packs: 1 new string (918 keys each, 0 missing).
+
 ## 3.24.0 — the numbers stopped lying
 
 3.23.0 added the measurement layer. Using it for one round exposed three ways it reported things that were not true.

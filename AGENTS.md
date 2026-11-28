@@ -63,7 +63,7 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (370 checks as of 3.24.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (379 checks as of 3.25.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
 ## Data files
@@ -90,6 +90,10 @@ npm run i18n:check                  # key coverage per language
 - A stream that stops sending frames must stop claiming bandwidth: `StreamSnapshot.Kbps` is 0 after 1.5 s of silence and
   `AgeMs` reports how old the last frame is. `H264Decoder` counts pre-key-frame skips with `Skipped()`, never `Dropped()`.
   The governor ignores stalled streams (`AgeMs > 3000`) — a sleeping phone must not drag its quality down.
+- `Core/LoadBudget` is the only place that decides what a *group* of streams may cost: `PixelsPerSecond(size, fps)` is the
+  cost unit, `SharePerStream(streams, cores)` the per-stream share, `Fit()` the reduction order (long side to 480 → fps →
+  size, floor 240p/5 fps). `ActiveShare` is refreshed by the 2 s tick and applied inside `DeviceVideo.Thumb` and as the
+  governor's ceiling, so a new stream opens already inside the budget. Self-cleaning: `SetActive(0, …)` = no cap.
 - UI: `PhoneDevice.PerfText` (fps · kbps · decode ms) in the tile header, refreshed by `RaisePerf()` so 300 tiles do not
   re-render every 2 s. AI tools: `get_stream_stats`, `diagnose_device`, `set_stream_quality`.
 

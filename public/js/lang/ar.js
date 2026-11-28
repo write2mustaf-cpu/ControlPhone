@@ -917,4 +917,5 @@ export default {
   "Tự chỉnh chất lượng theo hiệu năng thật của từng máy (hạ bitrate/fps/độ phân giải khi giải mã chậm hoặc CPU quá tải, tự nâng lại khi đã khoẻ)": "ضبط الجودة تلقائياً حسب أداء كل هاتف الفعلي (خفض معدل البت/الإطارات/الدقة عند بطء فك الترميز أو ارتفاع حمل المعالج، ورفعها مجدداً عند الاستقرار)",
   "Máy #{0}: hạ chất lượng lưới xuống {1}p/{2} fps — {3}": "الهاتف #{0}: خُفّضت جودة الشبكة إلى {1}p/{2} إطار/ث — {3}",
   "đứng · {0:0.0} giây không có khung": "متوقف · لا إطار منذ {0:0.0} ثانية",
+  "Chia ngân sách giải mã theo số điện thoại đang mở (hàng trăm máy: mỗi máy nhẹ lại để máy tính còn kịp xử lý)": "توزيع حصة فك الترميز على الهواتف المفتوحة (مع مئات البطاقات تصبح كل بطاقة أخف حتى يلحق الحاسب)",
 };
