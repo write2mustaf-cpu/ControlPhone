@@ -89,6 +89,19 @@
                         </Border.Style>
                         <TextBlock Text="R" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource Warn}"/>
                     </Border>
+                    <TextBlock Text="{Binding PerfText}" FontSize="10.5" Margin="0,0,6,0" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Muted}" ToolTip="{Binding PerfText}" TextTrimming="CharacterEllipsis">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding PerfText}" Value="">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                     <TextBlock Text="{Binding BatteryText}" FontSize="11" ToolTip="{Binding BatteryTip}" VerticalAlignment="Center">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">

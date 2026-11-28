@@ -78,7 +78,8 @@ public sealed class AiReply
 /// <summary>Thông tin máy rút gọn đưa vào lời nhắc hệ thống / công cụ.</summary>
 public sealed record AiDeviceInfo(
     string Id, int Num, string Name, string Model, string Android, string Status, string Transport,
-    int? Battery, bool? Charging, bool Root, string Ip, IReadOnlyList<string> Groups, bool Paused, bool Streaming, string? Error);
+    int? Battery, bool? Charging, bool Root, string Ip, IReadOnlyList<string> Groups, bool Paused, bool Streaming, string? Error,
+    double Fps = 0, double Kbps = 0, double DecodeMs = 0, long Dropped = 0, string Plan = "");
 
 /// <summary>Mẫu cấu hình sẵn cho từng nhà cung cấp (người dùng vẫn tự nhập khoá).</summary>
 public static class AiPresets

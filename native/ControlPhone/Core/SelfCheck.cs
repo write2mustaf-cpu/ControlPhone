@@ -59,6 +59,7 @@ public static class SelfCheck
             TargetChecks();
             ThemeChecks();
             HistoryChecks();
+            PerfChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -320,6 +321,7 @@ public static class SelfCheck
         public string ReadLogs(int lines) => "log line";
         public string SettingsSnapshot() => "Grid: 480px";
         public string ApplySetting(string key, string value) => key is "thumbFps" or "theme" ? "OK" : "ERR unknown setting: " + key;
+        public string SetQuality(string id, int maxSize, int fps, int kbps) => $"#{id} {maxSize}p/{fps}fps/{kbps}kbps";
         public Task<string> RunBatchAsync(string op, List<string> ids, Dictionary<string, object?> args, CancellationToken ct) => Task.FromResult("1 ok");
         public void OpenViewer(string id) { }
         public void OpenSupport() { }
@@ -983,6 +985,127 @@ public static class SelfCheck
         // Một phần tên chỉ khớp một máy thì vẫn tiện: "Galaxy" → #3.
         Check(Ai.AiToolHost.MatchOne(phones, "Galaxy").Hit?.Num == 3, "a unique partial name still resolves");
         Check(Ai.AiToolHost.MatchOne(phones, "Máy A").Hit?.Num == 4, "a Vietnamese name resolves");
+    }
+
+    // ---------------- hiệu năng: số đo luồng, điều chỉnh thích ứng, chẩn đoán ----------------
+    static void PerfChecks()
+    {
+        // ---- 1) số đo luồng ----
+        var st = new Video.StreamStats();
+        for (int i = 0; i <= 10; i++) st.Frame(480, 1080, 4.0, i * 100);
+        var snap = st.Snapshot(1000);
+        Check(Math.Abs(snap.Fps - 11) < 0.5, "fps is measured over a one second window", $"{snap.Fps:0.00}");
+        Check(snap.Width == 480 && snap.Height == 1080, "frame size is remembered", $"{snap.Width}x{snap.Height}");
+
+        var bw = new Video.StreamStats();
+        bw.Bytes(2000, 0);          // mốc đầu
+        bw.Bytes(2000, 1000);       // 2000 byte trong 1000 ms = 16 kbit/s
+        Check(Math.Abs(bw.Snapshot(1000).Kbps - 16) < 0.5, "bitrate follows the bytes received", $"{bw.Snapshot(1000).Kbps:0.0}");
+
+        var ewma = new Video.StreamStats();
+        ewma.Frame(10, 10, 10, 0);
+        ewma.Frame(10, 10, 50, 100);
+        Check(Math.Abs(ewma.Snapshot(200).DecodeMs - 18) < 0.01, "decode time is smoothed, not spiky", $"{ewma.Snapshot(200).DecodeMs:0.00}");
+
+        var drop = new Video.StreamStats();
+        drop.Dropped(); drop.Dropped(2);
+        Check(drop.Snapshot(0).Dropped == 3, "dropped frames are counted");
+
+        // ---- 2) bộ điều chỉnh thích ứng ----
+        QualityTarget Q(int size, int rate, int fps) => new(size, rate, fps);
+        var steady = new QualityGovernor(Q(480, 600_000, 15), Q(240, 150_000, 5), Q(480, 600_000, 15));
+        var calm = new QualitySignal(15, 5, 20, true, 1);
+        var noChange = Enumerable.Range(0, 6).Select(i => steady.Step(calm, i * 10_000)).All(d => !d.Changed);
+        Check(noChange, "a healthy stream is left alone");
+
+        var slow = new QualityGovernor(Q(480, 600_000, 15), Q(240, 150_000, 5), Q(480, 600_000, 15));
+        var hotSignal = new QualitySignal(15, 60, 40, true, 1);     // 60 ms giải mã: quá 60% ngân sách 66 ms
+        Check(!slow.Step(hotSignal, 0).Changed, "one slow second is not enough to change");
+        var first = slow.Step(hotSignal, 1000);
+        Check(first.Changed && first.Target.BitRate == 420_000 && first.Target.MaxFps == 15,
+            "two slow seconds lower the bitrate first", $"{first.Target.BitRate} {first.Target.MaxFps}fps");
+        Check(!slow.Step(hotSignal, 2000).Changed, "the cooldown blocks an immediate second change");
+
+        var lowFps = new QualityGovernor(Q(480, 600_000, 15), Q(240, 150_000, 5), Q(480, 600_000, 15));
+        lowFps.Step(new QualitySignal(4, 5, 20, true, 1), 0);
+        Check(lowFps.Step(new QualitySignal(4, 5, 20, true, 1), 1000).Changed, "frames arriving too slowly is stress too");
+
+        var cpu = new QualityGovernor(Q(480, 600_000, 15), Q(240, 150_000, 5), Q(480, 600_000, 15));
+        cpu.Step(new QualitySignal(15, 5, 95, true, 1), 0);
+        Check(cpu.Step(new QualitySignal(15, 5, 95, true, 1), 1000).Changed, "a loaded CPU lowers quality as well");
+
+        // bitrate đã ở sàn → hạ fps; fps ở sàn → hạ độ phân giải; không bao giờ dưới sàn
+        var atFloorRate = new QualityGovernor(Q(480, 150_000, 15), Q(240, 150_000, 5), Q(480, 150_000, 15));
+        atFloorRate.Step(hotSignal, 0);
+        var fpsStep = atFloorRate.Step(hotSignal, 1000);
+        Check(fpsStep.Target.MaxFps < 15 && fpsStep.Target.BitRate == 150_000, "at the bitrate floor the fps drops", $"{fpsStep.Target.MaxFps}fps");
+
+        var atFloorFps = new QualityGovernor(Q(480, 150_000, 5), Q(240, 150_000, 5), Q(480, 150_000, 5));
+        var slowAt5 = new QualitySignal(1, 5, 20, true, 1);   // 1 fps so với mức 5 fps = quá tải
+        atFloorFps.Step(slowAt5, 0);
+        var sizeStep = atFloorFps.Step(slowAt5, 1000);
+        Check(sizeStep.Target.MaxSize < 480 && sizeStep.Target.MaxSize % 2 == 0 && sizeStep.Target.MaxSize >= 240,
+            "at the fps floor the resolution drops, staying even", $"{sizeStep.Target.MaxSize}p");
+
+        var floorGov = new QualityGovernor(Q(480, 600_000, 15), Q(240, 150_000, 5), Q(480, 600_000, 15));
+        var below = false;
+        for (int i = 0; i < 60; i++)
+        {
+            var d = floorGov.Step(hotSignal, i * 5000L);
+            if (d.Target.MaxSize < 240 || d.Target.BitRate < 150_000 || d.Target.MaxFps < 5) below = true;
+        }
+        Check(!below, "the governor never goes below its floor", floorGov.Current.ToString());
+
+        var rise = new QualityGovernor(Q(480, 420_000, 15), Q(240, 150_000, 5), Q(480, 600_000, 15));
+        QualityDecision? up = null;
+        for (int i = 0; i < 6 && up is not { Changed: true }; i++) up = rise.Step(calm, i * 10_000);
+        Check(up is { Changed: true } && up.Target.BitRate > 420_000 && up.Target.BitRate <= 600_000,
+            "a healthy stream gets its bitrate back", $"{up?.Target.BitRate}");
+
+        var ceilingGov = new QualityGovernor(Q(480, 600_000, 15), Q(240, 150_000, 5), Q(480, 600_000, 15));
+        var above = false;
+        for (int i = 0; i < 40; i++)
+        {
+            var d = ceilingGov.Step(calm, i * 10_000L);
+            if (d.Target.MaxSize > 480 || d.Target.BitRate > 600_000 || d.Target.MaxFps > 15) above = true;
+        }
+        Check(!above, "the governor never goes above its ceiling");
+
+        // ---- 3) mức đã học được dùng khi mở luồng, không đè lên lựa chọn thủ công ----
+        var settings = new Settings { ThumbMaxSize = 480, ThumbBitRate = 600_000, ThumbFps = 15 };
+        var learned = new DeviceMeta { AutoMaxSize = 360, AutoBitRate = 300_000, AutoFps = 10 };
+        var learnedPlan = DeviceVideo.Thumb(learned, settings);
+        Check(learnedPlan == new VideoPlan(360, 300_000, 10), "the learned level is used on the next start", learnedPlan.ToString());
+        var manual = new DeviceMeta { ThumbMaxSize = 720, ThumbFps = 30, ThumbBitRate = 2_000_000, AutoMaxSize = 360, AutoFps = 10, AutoBitRate = 300_000 };
+        Check(DeviceVideo.Thumb(manual, settings) == new VideoPlan(720, 2_000_000, 30), "a manual choice always wins", DeviceVideo.Thumb(manual, settings).ToString());
+        Check(DeviceVideo.ThumbBase(learned, settings) == new VideoPlan(480, 600_000, 15), "the base plan ignores what was learned");
+        Check(AutoQuality.FloorOf(new VideoPlan(480, 600_000, 15)) == new QualityTarget(240, 150_000, 5), "the floor is a quarter of the base");
+
+        // ---- 4) chẩn đoán từ nhật ký ----
+        var key = Diagnostics.Analyse(["adb: unauthorized", "device unauthorized"]);
+        Check(key is { Code: "unauthorized" } && key.Hits == 2, "an unaccepted ADB key is recognised", key?.Code ?? "null");
+        var samsung = Diagnostics.Analyse(["stack corruption detected", "ACodec reconfig"]);
+        Check(samsung is { Code: "cmdline-stack", AutoFixable: true }, "the Samsung command-line crash is recognised", samsung?.Code ?? "null");
+        var offline = Diagnostics.Analyse(["ERROR device offline"]);
+        Check(offline is { Code: "offline" }, "an offline device is recognised regardless of case", offline?.Code ?? "null");
+        var latest = Diagnostics.Analyse(["unauthorized", "reconnecting", "failed to connect"]);
+        Check(latest is { Code: "wifi" }, "the most recent failure wins", latest?.Code ?? "null");
+        Check(Diagnostics.Analyse([]) == null, "an empty log produces no diagnosis");
+
+        // ---- 5) công cụ AI mới có mặt và có mô tả ----
+        var host = new FakeHost();
+        var tools = new Ai.AiToolHost(host);
+        var names = tools.Specs.Select(x => x.Name).ToList();
+        Check(names.Contains("get_stream_stats") && names.Contains("diagnose_device") && names.Contains("set_stream_quality"),
+            "the performance tools are registered", string.Join(",", names.Where(n => n.StartsWith("get_stream") || n.StartsWith("diagnose") || n.StartsWith("set_stream"))));
+        var statsCall = tools.ExecuteAsync("get_stream_stats", "{}", CancellationToken.None).GetAwaiter().GetResult();
+        Check(statsCall.Ok && statsCall.Content.Contains("no video yet"), "stats are reported per phone", statsCall.Summary);
+        var noValues = tools.ExecuteAsync("set_stream_quality", "{\"device\":\"1\"}", CancellationToken.None).GetAwaiter().GetResult();
+        Check(!noValues.Ok, "a quality change with no values is refused");
+        var qualityCall = tools.ExecuteAsync("set_stream_quality", "{\"device\":\"1\",\"fps\":8,\"kbps\":250}", CancellationToken.None).GetAwaiter().GetResult();
+        Check(qualityCall.Ok && qualityCall.Content.Contains("8fps"), "a quality change reaches the host", qualityCall.Content);
+        var misTarget = tools.ExecuteAsync("diagnose_device", "{\"device\":\"Phone\"}", CancellationToken.None).GetAwaiter().GetResult();
+        Check(!misTarget.Ok, "an ambiguous phone name is refused, not guessed", misTarget.Summary);
     }
 
     // ---------------- cửa sổ hội thoại gửi cho nhà cung cấp AI ----------------

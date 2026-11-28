@@ -44,6 +44,9 @@ public sealed class FrameBuffer
     }
 
     public void MarkDirty() { lock (gate) dirty = front.Length > 0; }
+
+    /// <summary>Kích thước khung gần nhất (0 khi chưa có khung).</summary>
+    public (int W, int H) Size { get { lock (gate) return (frontW, frontH); } }
 }
 
 /// <summary>Giải mã H.264 bằng FFmpeg (CPU, đa luồng tuỳ chọn), xuất BGRA vào <see cref="FrameBuffer"/>.</summary>
@@ -53,6 +56,8 @@ public sealed unsafe class H264Decoder : IDisposable
     byte[]? config;
     bool waitKey = true;
     public FrameBuffer Output { get; } = new();
+    /// <summary>Số đo hiệu năng của luồng này (khung/giây, kbps, thời gian giải mã) — dùng cho điều chỉnh chất lượng và giao diện.</summary>
+    public StreamStats Stats { get; } = new();
     public string? Error { get; private set; }
     public event Action? NeedKeyFrame;
 
@@ -81,7 +86,10 @@ public sealed unsafe class H264Decoder : IDisposable
     public void Feed(bool isConfig, bool isKey, byte[] data)
     {
         if (isConfig) { config = data; waitKey = true; return; }
-        if (waitKey && !isKey) return;
+        if (waitKey && !isKey) { Stats.Dropped(); return; }
+        Stats.Bytes(data.Length);
+        var started = System.Diagnostics.Stopwatch.GetTimestamp();
+        var before = Output.Frames;
         if (isKey) waitKey = false;
         int extra = isKey && config != null ? config.Length : 0;
         int size = extra + data.Length;
@@ -98,6 +106,13 @@ public sealed unsafe class H264Decoder : IDisposable
         {
             Convert(frame);
             Ffmpeg.av_frame_unref(frame);
+        }
+        var produced = Output.Frames - before;
+        if (produced > 0)
+        {
+            var ms = System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds / produced;
+            var (fw, fh) = Output.Size;
+            Stats.Frame(fw, fh, ms);
         }
     }
 

@@ -912,4 +912,8 @@ export default {
   "đang cài": "installing",
   "đang khởi động vào recovery": "rebooting into recovery",
   "đóng luồng tăng tốc": "close the acceleration stream",
+  "Lưới — bitrate (kbps)": "Grid — bitrate (kbps)",
+  "Hiện số đo trên tiêu đề mỗi ô: khung/giây · kbps · ms giải mã": "Show live figures in each tile header: fps · kbps · decode ms",
+  "Tự chỉnh chất lượng theo hiệu năng thật của từng máy (hạ bitrate/fps/độ phân giải khi giải mã chậm hoặc CPU quá tải, tự nâng lại khi đã khoẻ)": "Tune quality from real per-phone performance (lower bitrate/fps/resolution when decoding is slow or the CPU is loaded, raise it again when healthy)",
+  "Máy #{0}: hạ chất lượng lưới xuống {1}p/{2} fps — {3}": "Phone #{0}: grid quality lowered to {1}p/{2} fps — {3}",
 };

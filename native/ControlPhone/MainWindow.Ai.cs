@@ -37,8 +37,25 @@ public partial class MainWindow : IAiHost
             d.Id, d.Num, d.DisplayName, d.Model, d.Android, d.Status, d.Transport ?? "—",
             d.Battery, d.Battery != null ? d.Charging : null, d.Root, d.Ip,
             d.Groups.ToList(), d.Paused, d.ControlSession != null || d.HasFrame,
-            string.IsNullOrEmpty(d.Error) ? null : d.Error))
+            string.IsNullOrEmpty(d.Error) ? null : d.Error,
+            d.Perf.Fps, d.Perf.Kbps, d.Perf.DecodeMs, d.Perf.Dropped,
+            d.OpenedPlan is { } p ? $"{p.MaxSize}p/{p.MaxFps}fps/{p.BitRate / 1000}kbps" : ""))
         .ToList());
+
+    public string SetQuality(string id, int maxSize, int fps, int kbps) => OnUi(() =>
+    {
+        var d = manager.Get(id);
+        if (d == null) return "Phone not found.";
+        var meta = Store.Meta(d.Id);
+        if (maxSize > 0) meta.ThumbMaxSize = Math.Clamp(maxSize, 160, 1920);
+        if (fps > 0) meta.ThumbFps = Math.Clamp(fps, 1, 60);
+        if (kbps > 0) meta.ThumbBitRate = Math.Clamp(kbps, 30, 20_000) * 1000;
+        Store.Save();
+        manager.RestartSessions(d);
+        var plan = DeviceVideo.Thumb(meta, Store.Settings);
+        d.Changed();
+        return $"#{d.Num} {d.DisplayName}: grid stream now {plan.MaxSize}p · {plan.MaxFps} fps · {plan.BitRate / 1000} kbps (stream reopened).";
+    });
 
     public IReadOnlyList<string> SelectedIds() => OnUi(() => selected.ToList());
 

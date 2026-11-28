@@ -63,7 +63,7 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (334 checks as of 3.22.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (364 checks as of 3.23.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
 ## Data files
@@ -76,6 +76,19 @@ npm run i18n:check                  # key coverage per language
 - `node tools/i18n-native.js --strict` runs in CI and fails when ar or en miss a string. The extractor skips
   `Core/SelfCheck.cs` (test fixtures) and interpolation fragments — do not "translate" those.
 - Self-check asserts the whole ar pack: no value left in Vietnamese, every value has Arabic script, `{n}` placeholders kept.
+
+## Performance layer
+- `Video/StreamStats` is the only place that counts frames/bytes per stream (fps over a 1 s window, kbps stored ×100 so a
+  rounding step cannot zero it, EWMA decode time, dropped frames). `H264Decoder.Stats` updates it from `Feed`.
+- `Core/AdaptiveQuality.QualityGovernor` is the pure decision engine: 2 consecutive stressed samples lower bitrate → fps →
+  resolution, 4 healthy samples raise them back, 4 s/6 s cooldown, hard floor/ceiling, even resolutions. Tested with an
+  injected clock — never assert on wall-clock time.
+- `Core/AutoQuality` runs it every 2 s for phones whose grid stream is live, stores the learned level in
+  `DeviceMeta.AutoMaxSize/AutoFps/AutoBitRate` and reopens only that phone's stream when it has to go lower.
+- `DeviceVideo.ThumbBase` = what the user asked for, `DeviceVideo.Thumb` = base clamped by the learned level. A manual
+  override always wins over a learned value; never write learned values into the manual override fields.
+- UI: `PhoneDevice.PerfText` (fps · kbps · decode ms) in the tile header, refreshed by `RaisePerf()` so 300 tiles do not
+  re-render every 2 s. AI tools: `get_stream_stats`, `diagnose_device`, `set_stream_quality`.
 
 ## AI conversation window
 - `AiAgent.Window(messages, max=60)` is the only thing sent to a provider: it keeps the last N turns, starts at a `user`

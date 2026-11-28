@@ -835,7 +835,9 @@ public sealed class DeviceManager : IDisposable
         using var _op = StallWatch.Op("mở luồng lưới");
         if (stopping || d.Thumb != null || d.ActiveAddr == null || d.Pending || IsRecovery(d)) return;
         d.RestartCts?.Cancel();
+        var plan = DeviceVideo.Thumb(Store.MetaOrNull(d.Id), Store.Settings);
         var sess = new ScrcpySession(d.ActiveAddr, ThumbOptions(d));
+        d.OpenedPlan = new VideoPlan(plan.MaxSize, plan.BitRate, plan.MaxFps);
         d.Thumb = sess;
         d.Status = "connecting";
         d.Error = "";
