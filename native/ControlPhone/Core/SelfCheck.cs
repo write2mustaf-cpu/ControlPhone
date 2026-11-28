@@ -710,6 +710,24 @@ public static class SelfCheck
         var anth = new Ai.AiProvider { Kind = Ai.AiProviderKind.Anthropic, BaseUrl = "https://api.anthropic.com", Model = "claude-sonnet-4-5" };
         Check(Ai.AiClient.StreamBody(anth, "{\"x\":1}").Contains("\"stream\":true") && Ai.AiClient.StreamUrl(anth).EndsWith("/v1/messages"), "anthropic stream body + url");
         Check(new Ai.StreamAccumulator(Ai.AiProviderKind.OpenAi).Empty, "empty stream is detected so the caller can fall back");
+
+        // Luồng vỡ giữa chừng: chữ đã nhận phải được giữ lại (không gửi lại cả câu = tốn tiền, chữ trên màn hình biến mất),
+        // nhưng lời gọi công cụ nhận dở phải bị bỏ vì JSON của nó có thể đã bị cắt.
+        var broken = new Ai.StreamAccumulator(Ai.AiProviderKind.OpenAi);
+        foreach (var ev in new Ai.SseParser().Feed(
+            "data: {\"choices\":[{\"delta\":{\"content\":\"Đang kiểm tra\"}}]}\n\n" +
+            "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"name\":\"tap\",\"arguments\":\"{\\\"x\\\"\"}}]}}]}\n\n"))
+            broken.Feed(ev);
+        Check(!broken.Empty && broken.HasText, "a broken stream still counts as content");
+        var partialReply = broken.Partial();
+        Check(partialReply is { Incomplete: true } && partialReply.Text == "Đang kiểm tra",
+            "a reply cut mid-stream keeps the text it already showed", partialReply?.Text ?? "null");
+        Check(partialReply != null && partialReply.ToolCalls.Count == 0 && partialReply.Ok,
+            "a half-received tool call is dropped, not executed", partialReply?.ToolCalls.Count.ToString() ?? "null");
+        Check(new Ai.StreamAccumulator(Ai.AiProviderKind.OpenAi).Partial() == null,
+            "a stream that broke before any text still falls back to the plain call");
+        Check(new Ai.AiReply { Text = "x", Incomplete = true }.Incomplete && new Ai.AiReply { Text = "x" }.Ok,
+            "a complete reply is not marked incomplete");
     }
 
     // ---------------- nhật ký riêng của từng máy ----------------

@@ -73,6 +73,9 @@ public sealed class AiReply
     public AiUsage Usage { get; init; } = new(0, 0);
     public string? Error { get; init; }
     public bool Ok => Error == null;
+
+    /// <summary>Luồng bị cắt khi đang nhận (quá thời gian / mất mạng): chữ trong <see cref="Text"/> là thật nhưng thiếu.</summary>
+    public bool Incomplete { get; init; }
 }
 
 /// <summary>Thông tin máy rút gọn đưa vào lời nhắc hệ thống / công cụ.</summary>
