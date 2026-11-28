@@ -41,6 +41,11 @@ jobs:
         shell: pwsh
         run: |
           $v = (Select-String -Path native/ControlPhone/ControlPhone.csproj -Pattern '<Version>([^<]+)</Version>').Matches[0].Groups[1].Value
+          # Tag và tệp dự án phải cùng một số: lệch nhau (tag v3.29.0, csproj 3.28.0) từng phát hành bản 3.29.0
+          # mang tên tệp 3.28.0 — người dùng tải "bản mới" và nhận bản cũ.
+          if ("${{ github.ref }}" -like 'refs/tags/v*' -and "${{ github.ref_name }}" -ne "v$v") {
+            throw "tag ${{ github.ref_name }} nhưng ControlPhone.csproj ghi $v — tăng <Version> trước khi gắn tag"
+          }
           "version=$v" >> $env:GITHUB_OUTPUT
           "zip=ControlPhone-v$v-win64" >> $env:GITHUB_OUTPUT
           "setup=ControlPhone-Setup-v$v-win64" >> $env:GITHUB_OUTPUT

@@ -34,6 +34,24 @@ VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
+MIN_SETUP = 5_000_000
+MIN_ZIP = 5_000_000
+
+
+def assert_real_artifact(path: Path, magic: bytes, min_bytes: int, what: str) -> None:
+    """Từ chối tệp không phải bộ cài thật: một trang 404 HTML tải về (9 byte) đã từng được đóng gói thành manifest
+    "đã xác minh" và làm hỏng bản cài Scoop của người dùng."""
+    if not path.exists():
+        raise SystemExit(f"{what}: không có tệp {path}")
+    size = path.stat().st_size
+    if size < min_bytes:
+        raise SystemExit(f"{what}: {path.name} chỉ {size:,} byte — không phải bộ cài thật")
+    with path.open("rb") as f:
+        head = f.read(len(magic))
+    if head != magic:
+        raise SystemExit(f"{what}: {path.name} không bắt đầu bằng {magic!r} — không phải bộ cài thật")
+
+
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
@@ -206,6 +224,8 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--zip", required=True, type=Path, dest="portable")
     ap.add_argument("--out", type=Path, default=Path("dist/manifests"))
     a = ap.parse_args(argv)
+    assert_real_artifact(a.setup, b"MZ", MIN_SETUP, "setup")
+    assert_real_artifact(a.portable, b"PK", MIN_ZIP, "portable")
     index = build(a.version, a.setup, a.portable, a.out)
     print(f"manifests for {a.version} written to {a.out}")
     print(f"  setup    {index['setup']['bytes']:>10,} B  sha256 {index['setup']['sha256']}")
