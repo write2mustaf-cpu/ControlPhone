@@ -21,6 +21,8 @@ public interface IAiHost
     string SettingsSnapshot();
     /// <summary>Áp dụng một cài đặt trong danh sách cho phép; trả về mô tả kết quả.</summary>
     string ApplySetting(string key, string value);
+    /// <summary>Đặt mức hình riêng cho một máy (0 = giữ nguyên / dùng cài đặt chung) rồi mở lại luồng của máy đó.</summary>
+    string SetQuality(string id, int maxSize, int fps, int kbps);
     /// <summary>Chạy thao tác hàng loạt và chờ xong; trả về bảng kết quả từng máy.</summary>
     Task<string> RunBatchAsync(string op, List<string> ids, Dictionary<string, object?> args, CancellationToken ct);
     void OpenViewer(string id);
@@ -152,6 +154,21 @@ public sealed class AiToolHost
         new("app_guide", "Explain how ControlPhone works: topics devices, groups, sync, wifi, streaming, performance, ai, support, troubleshooting.",
             Schema(("topic", "string", "Topic name (optional)", false)), false, (a, ct) => Task.FromResult(Guide(a))),
 
+        new("get_stream_stats", "Live performance of every phone's grid stream: frames per second, kbps, decode time, dropped frames and the quality level in use. Use it before blaming the network or the phone.",
+            Schema(("device", "string", "Number or name of one phone (optional; omit for all)", false)), false,
+            (a, ct) => Task.FromResult(StreamStats(a))),
+
+        new("diagnose_device", "Read one phone's log and return the root cause plus the fix (ADB key, USB/Wi-Fi drop, encoder, key frame, adb port conflict). Read-only.",
+            Schema(("device", "string", "Number or name of the phone", true)), false,
+            (a, ct) => Task.FromResult(Diagnose(a))),
+
+        new("set_stream_quality", "Set this phone's grid quality (resolution / fps / kbps). 0 keeps the current value. The stream of that phone restarts; other phones are not touched.",
+            Schema(("device", "string", "Number or name of the phone", true),
+                   ("maxSize", "integer", "Max resolution in px (e.g. 480, 720, 1080; 0 = keep)", false),
+                   ("fps", "integer", "Frames per second (1-60; 0 = keep)", false),
+                   ("kbps", "integer", "Video bitrate in kbps (30-20000; 0 = keep)", false)), true,
+            (a, ct) => Task.FromResult(SetQuality(a))),
+
         new("open_support", "Open the 'Our links & support' section (email, Telegram channel and group, Facebook page, Sham Cash ID).", Schema(), false,
             (a, ct) => { host.OpenSupport(); return Task.FromResult(new AiToolResult(true, "Opened the support section.", "opened support")); }),
 
@@ -173,6 +190,58 @@ public sealed class AiToolHost
         try { return await def.Run(args, ct).ConfigureAwait(false); }
         catch (OperationCanceledException) { return new AiToolResult(false, "Stopped by the user.", "stopped"); }
         catch (Exception e) { return new AiToolResult(false, e.Message, "error: " + e.Message); }
+    }
+
+    // ---------------- hiệu năng & chẩn đoán ----------------
+    AiToolResult StreamStats(JsonObject a)
+    {
+        var devs = host.Devices().ToList();
+        var single = S(a, "device");
+        if (single != "")
+        {
+            var (hit, problem) = MatchOne(devs.Select(d => new PhoneTarget(d.Id, d.Num, d.Name, d.Status)).ToList(), single);
+            if (hit == null) return new AiToolResult(false, problem, "device not found");
+            devs = devs.Where(d => d.Id == hit.Id).ToList();
+        }
+        if (devs.Count == 0) return new AiToolResult(false, "No phones are connected.", "no devices");
+        var sb = new StringBuilder();
+        foreach (var d in devs)
+        {
+            sb.Append($"#{d.Num} {d.Name} ({d.Status}, {d.Transport}) — ");
+            sb.Append(d.Fps > 0 ? $"{d.Fps:0} fps · {d.Kbps:N0} kbps · {d.DecodeMs:0.0} ms/frame" : "no video yet");
+            if (d.Dropped > 0) sb.Append($" · {d.Dropped} dropped");
+            if (d.Plan != "") sb.Append($" · plan {d.Plan}");
+            sb.AppendLine();
+        }
+        return new AiToolResult(true, sb.ToString().TrimEnd(), $"{devs.Count} phone(s)");
+    }
+
+    AiToolResult Diagnose(JsonObject a)
+    {
+        var devs = host.Devices().ToList();
+        var (hit, problem) = MatchOne(devs.Select(d => new PhoneTarget(d.Id, d.Num, d.Name, d.Status)).ToList(), S(a, "device"));
+        if (hit == null) return new AiToolResult(false, problem, "device not found");
+        var diag = Diagnostics.ForDevice(hit.Id);
+        var info = devs.FirstOrDefault(d => d.Id == hit.Id);
+        if (diag == null)
+            return new AiToolResult(true, $"#{hit.Num} {hit.Name}: nothing in the log matches a known failure. Status: {hit.Status}." +
+                (string.IsNullOrEmpty(info?.Error) ? "" : $" Last error: {info!.Error}"), "no known failure");
+        var text = $"#{hit.Num} {hit.Name}: {diag.Severity.ToUpperInvariant()} · {diag.Code} (seen {diag.Hits}x)\n" +
+                   $"Cause: {diag.Cause}\nFix: {diag.Fix}" + (diag.AutoFixable ? "\nControlPhone can handle this automatically." : "");
+        return new AiToolResult(true, text, diag.Code);
+    }
+
+    AiToolResult SetQuality(JsonObject a)
+    {
+        var devs = host.Devices().ToList();
+        var (hit, problem) = MatchOne(devs.Select(d => new PhoneTarget(d.Id, d.Num, d.Name, d.Status)).ToList(), S(a, "device"));
+        if (hit == null) return new AiToolResult(false, problem, "device not found");
+        var size = Math.Clamp(I(a, "maxSize", 0), 0, 2560);
+        var fps = Math.Clamp(I(a, "fps", 0), 0, 60);
+        var kbps = Math.Clamp(I(a, "kbps", 0), 0, 20_000);
+        if (size == 0 && fps == 0 && kbps == 0)
+            return new AiToolResult(false, "Nothing to change: give maxSize, fps or kbps.", "no values");
+        return new AiToolResult(true, host.SetQuality(hit.Id, size, fps, kbps), $"#{hit.Num} quality");
     }
 
     // ---------------- tiện ích tham số ----------------

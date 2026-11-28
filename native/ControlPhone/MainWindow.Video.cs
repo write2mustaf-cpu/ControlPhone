@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using ControlPhone.Core;
 
 namespace ControlPhone;
@@ -11,6 +12,36 @@ namespace ControlPhone;
 /// </summary>
 public partial class MainWindow
 {
+    /// <summary>
+    /// Vòng điều chỉnh chất lượng: mỗi 2 giây đọc số đo thật của từng luồng lưới. Khi bộ điều chỉnh hạ mức của một máy, luồng
+    /// của riêng máy đó được mở lại (các máy khác không bị ảnh hưởng); khi nâng lại mức thì chờ lần mở luồng kế tiếp.
+    /// </summary>
+    void InitAutoQuality()
+    {
+        var timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(2) };
+        timer.Tick += (_, _) =>
+        {
+            if (!Store.Settings.AutoQuality) return;
+            var now = Environment.TickCount64;
+            foreach (var d in manager.Devices.ToList())
+            {
+                var decision = AutoQuality.Observe(d, now);
+                if (decision is { Changed: true } && d.OpenedPlan is { } opened && d.HqRefs == 0
+                    && d.ActiveAddr != null && !d.Pending && d.ThumbDecoder != null)
+                {
+                    var t = decision.Target;
+                    if (t.MaxFps < opened.MaxFps || t.BitRate < opened.BitRate || t.MaxSize < opened.MaxSize)
+                    {
+                        manager.RestartSessions(d);
+                        Ui.Toast(T("Máy #{0}: hạ chất lượng lưới xuống {1}p/{2} fps — {3}", d.Num, t.MaxSize, t.MaxFps, decision.Reason), "", 4000);
+                    }
+                }
+                if (Store.Settings.ShowPerf) d.RaisePerf();
+            }
+        };
+        timer.Start();
+    }
+
     void DlgDeviceVideo(PhoneDevice d)
     {
         var meta = Store.Meta(d.Id);
@@ -29,6 +60,7 @@ public partial class MainWindow
 
         var thumbSize = Num("Lưới — độ phân giải tối đa (px)", meta.ThumbMaxSize, 160, 1920, "trống = " + s.ThumbMaxSize);
         var thumbFps = Num("Lưới — số khung hình/giây", meta.ThumbFps, 1, 60, "trống = " + s.ThumbFps);
+        var thumbRate = Num("Lưới — bitrate (kbps)", meta.ThumbBitRate is int tr ? tr / 1000 : null, 30, 20_000, "trống = " + s.ThumbBitRate / 1000);
         var hqSize = Num("Xem lớn — độ phân giải tối đa (px)", meta.HqMaxSize, 320, 2560, "trống = " + s.HqMaxSize);
         var hqFps = Num("Xem lớn — số khung hình/giây", meta.HqFps, 5, 60, "trống = " + s.HqFps);
         var hqRate = Num("Xem lớn — bitrate (kbps)", meta.HqBitRate is int r ? r / 1000 : null, 500, 40_000, "trống = " + s.HqBitRate / 1000);
@@ -46,13 +78,14 @@ public partial class MainWindow
         dl.AddAction("Đóng");
         dl.AddAction("Dùng cài đặt chung", "Btn", () =>
         {
-            meta.ThumbMaxSize = meta.ThumbFps = meta.HqMaxSize = meta.HqFps = meta.HqBitRate = null;
+            meta.ThumbMaxSize = meta.ThumbFps = meta.ThumbBitRate = meta.HqMaxSize = meta.HqFps = meta.HqBitRate = null;
+            meta.AutoMaxSize = meta.AutoFps = meta.AutoBitRate = null;
             Apply();
             return true;
         });
         dl.AddAction("Lưu", "Primary", () =>
         {
-            var values = new[] { Read(thumbSize), Read(thumbFps), Read(hqSize), Read(hqFps), Read(hqRate) };
+            var values = new[] { Read(thumbSize), Read(thumbFps), Read(thumbRate), Read(hqSize), Read(hqFps), Read(hqRate) };
             if (values.Any(v => v == -1))
             {
                 Ui.Toast(T("Giá trị không hợp lệ — hãy nhập số trong khoảng cho phép hoặc để trống"), "err", 6000);
@@ -60,9 +93,10 @@ public partial class MainWindow
             }
             meta.ThumbMaxSize = values[0];
             meta.ThumbFps = values[1];
-            meta.HqMaxSize = values[2];
-            meta.HqFps = values[3];
-            meta.HqBitRate = values[4] * 1000;
+            meta.ThumbBitRate = values[2] * 1000;
+            meta.HqMaxSize = values[3];
+            meta.HqFps = values[4];
+            meta.HqBitRate = values[5] * 1000;
             Apply();
             return true;
         });

@@ -3,6 +3,55 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.23.0 — measured performance, per-phone adaptive quality, log diagnosis
+
+This round delivers phase 1 (performance) and part of phase 4 (AI) of the big brief. **What is not here is listed at the
+end** — nothing below is claimed unless it is implemented and tested.
+
+### 1. The stream finally reports what it does
+`Video/StreamStats` counts, per stream: frames per second over a one-second window, kbps from the bytes actually received,
+decode milliseconds (EWMA, so one slow frame cannot flip a decision), dropped frames and frame size. `H264Decoder` feeds it
+from `Feed()`, so the numbers are the real pipeline and not a guess. Found while testing: the bitrate was stored as
+`kbit/s / 100` and printed **0.2 instead of 16** — the unit is now stored ×100 and asserted.
+
+### 2. Per-phone adaptive quality, remembered
+`Core/AdaptiveQuality.QualityGovernor` is a pure state machine with an injected clock:
+
+```
+2 stressed samples  → bitrate -30%, then fps -25%, then resolution -20%   (never below the floor)
+4 healthy samples   → bitrate +20%, then fps +17%, then resolution +20%   (never above the ceiling)
+4 s / 6 s cooldown  → no flapping; a hard floor of ½ resolution, ¼ bitrate, ⅓ fps
+```
+
+`Core/AutoQuality` samples every 2 s for phones whose grid stream is live, and when a phone has to go lower it reopens
+**only that phone's** stream. The learned level is stored per phone (`DeviceMeta.AutoMaxSize/AutoFps/AutoBitRate`), so the
+next start uses it immediately — and a manual override in the device dialog always wins, because learned values live in
+separate fields.
+
+### 3. Visible measurement + a real per-phone bitrate
+Each tile header now shows `12 fps · 480 kbps · 3.2 ms` (toggle in settings, `RaisePerf()` refreshes only that line, not the
+whole tile). The device video dialog gained the missing **grid bitrate** field, so bitrate can finally be set per phone.
+
+### 4. Log diagnosis instead of guessing
+`Core/Diagnostics` maps the log to ten known root causes (unaccepted ADB key, Samsung command-line crash, adb port conflict,
+drop-off, no device, server crash, software-only encoder, lost key frame, permission denial, Wi-Fi loss) with cause, fix and
+whether ControlPhone can fix it by itself. It picks the **most recent** matching rule and reports how often it appeared.
+
+### 5. Three more AI tools (24 → 27)
+`get_stream_stats`, `diagnose_device`, `set_stream_quality` — the last one resolves the phone with the 3.20 rules (ambiguous
+name = refuse), rejects a call with no values, and reopens only the targeted phone.
+
+### Verification
+- Self-check 334 → **364**, and the new pure logic was first run in a standalone harness on Linux (21 assertions) where the
+  kbps unit bug was caught before it shipped.
+- CI on `windows-latest`: build, publish, install → `--selfcheck` → uninstall, portable ZIP.
+
+### Not in this release (so the claim stays honest)
+Hardware decoding (D3D11VA/NVDEC/QuickSync) with zero-copy D3D11 presentation, H.265/AV1 negotiation, audio streaming,
+mDNS discovery, seamless USB↔Wi-Fi handover, macro recorder/scenario editor, OCR/vision automation, local REST/WebSocket/CLI,
+plugin system, video recording, 60+ tools, voice input. Those are large pieces; they are not half-built, so they are not
+shipped.
+
 ## 3.22.0 — a long AI chat (or pressing Stop) broke the conversation for good
 
 ### The bug

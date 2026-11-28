@@ -43,6 +43,10 @@ public sealed class Settings
     public int MaxParallelStart { get; set; } = 6;
     public int MaxParallelJobs { get; set; } = 10;
     public string ScreenshotDir { get; set; } = "";
+    /// <summary>Tự chỉnh chất lượng lưới theo hiệu năng thật của từng máy (hạ bitrate/fps/độ phân giải khi máy hoặc PC quá tải).</summary>
+    public bool AutoQuality { get; set; } = true;
+    /// <summary>Hiện số đo (fps · kbps) trên tiêu đề mỗi ô điện thoại.</summary>
+    public bool ShowPerf { get; set; } = true;
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 
     public Settings Clone() => (Settings)MemberwiseClone();
@@ -73,10 +77,16 @@ public sealed class DeviceMeta
     public string? PrevIme { get; set; }
     // Ghi đè hình ảnh riêng của máy này (null = dùng cài đặt chung)
     public int? ThumbMaxSize { get; set; }
+    public int? ThumbBitRate { get; set; }
     public int? ThumbFps { get; set; }
     public int? HqMaxSize { get; set; }
     public int? HqBitRate { get; set; }
     public int? HqFps { get; set; }
+    // Mức chất lượng đã học được cho máy này (bộ điều chỉnh thích ứng); null = chưa học / đang dùng mức gốc.
+    // Tách khỏi các trường ghi đè phía trên để không bao giờ ghi đè lựa chọn thủ công của người dùng.
+    public int? AutoMaxSize { get; set; }
+    public int? AutoFps { get; set; }
+    public int? AutoBitRate { get; set; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

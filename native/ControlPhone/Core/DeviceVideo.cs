@@ -9,12 +9,13 @@ public sealed record VideoPlan(int MaxSize, int BitRate, int MaxFps);
 /// </summary>
 public static class DeviceVideo
 {
-    public static VideoPlan Thumb(DeviceMeta? m, Settings s)
+    /// <summary>Mức người dùng đặt (ghi đè riêng của máy, không có thì cài đặt chung) — bỏ qua mức đã học.</summary>
+    public static VideoPlan ThumbBase(DeviceMeta? m, Settings s)
     {
         var plan = new VideoPlan(
-            Pick(m?.ThumbMaxSize, s.ThumbMaxSize, 160, 1920),
-            Pick(null, s.ThumbBitRate, 30_000, 20_000_000),
-            Pick(m?.ThumbFps, s.ThumbFps, 1, 60));
+            Pick(m?.ThumbMaxSize, null, s.ThumbMaxSize, 160, 1920),
+            Pick(m?.ThumbBitRate, null, s.ThumbBitRate, 30_000, 20_000_000),
+            Pick(m?.ThumbFps, null, s.ThumbFps, 1, 60));
         return SafeMode.Active
             ? plan with
             {
@@ -25,12 +26,31 @@ public static class DeviceVideo
             : plan;
     }
 
+    /// <summary>Mức dùng để mở luồng lưới: mức gốc, nhưng không cao hơn mức đã học được cho máy này.</summary>
+    public static VideoPlan Thumb(DeviceMeta? m, Settings s)
+    {
+        var plan = ThumbBase(m, s);
+        if (m == null) return plan;
+        return plan with
+        {
+            MaxSize = Tune(m.ThumbMaxSize, m.AutoMaxSize, plan.MaxSize, 160, 1920),
+            BitRate = Tune(m.ThumbBitRate, m.AutoBitRate, plan.BitRate, 30_000, 20_000_000),
+            MaxFps = Tune(m.ThumbFps, m.AutoFps, plan.MaxFps, 1, 60),
+        };
+    }
+
+    /// <summary>Máy đã được đặt tay thì giữ nguyên; chưa đặt thì dùng mức đã học (không cao hơn mức gốc).</summary>
+    static int Tune(int? manual, int? learned, int current, int min, int max) =>
+        manual is > 0 ? current
+        : learned is int l && l > 0 ? Math.Min(current, Math.Clamp(l, min, max))
+        : current;
+
     public static VideoPlan Hq(DeviceMeta? m, Settings s)
     {
         var plan = new VideoPlan(
-            Pick(m?.HqMaxSize, s.HqMaxSize, 320, 2560),
-            Pick(m?.HqBitRate, s.HqBitRate, 500_000, 40_000_000),
-            Pick(m?.HqFps, s.HqFps, 5, 60));
+            Pick(m?.HqMaxSize, null, s.HqMaxSize, 320, 2560),
+            Pick(m?.HqBitRate, null, s.HqBitRate, 500_000, 40_000_000),
+            Pick(m?.HqFps, null, s.HqFps, 5, 60));
         return SafeMode.Active
             ? plan with
             {
@@ -41,13 +61,16 @@ public static class DeviceVideo
             : plan;
     }
 
-    /// <summary>Ghi đè hợp lệ (&gt; 0 và trong khoảng) thì dùng, ngược lại dùng giá trị chung.</summary>
-    static int Pick(int? over, int global, int min, int max)
+    /// <summary>Ghi đè hợp lệ (&gt; 0 và trong khoảng) thì dùng, rồi tới mức đã học, cuối cùng là giá trị chung.</summary>
+    static int Pick(int? over, int? learned, int global, int min, int max)
     {
-        var v = over is int o && o > 0 ? o : global;
+        var v = over is int o && o > 0 ? o : learned is int l && l > 0 ? l : global;
         return Math.Clamp(v, min, max);
     }
 
     public static bool HasOverrides(DeviceMeta? m) =>
-        m != null && (m.ThumbFps != null || m.ThumbMaxSize != null || m.HqFps != null || m.HqMaxSize != null || m.HqBitRate != null);
+        m != null && (m.ThumbFps != null || m.ThumbMaxSize != null || m.ThumbBitRate != null || m.HqFps != null || m.HqMaxSize != null || m.HqBitRate != null);
+
+    public static bool HasLearned(DeviceMeta? m) =>
+        m != null && (m.AutoFps != null || m.AutoMaxSize != null || m.AutoBitRate != null);
 }

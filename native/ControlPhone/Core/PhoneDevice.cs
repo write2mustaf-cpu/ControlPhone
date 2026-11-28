@@ -121,6 +121,24 @@ public sealed class PhoneDevice : INotifyPropertyChanged
     public bool ShowOverlay => OverlayKind != "";
     public bool ShowSpinner => OverlayKind == "spin";
 
+    /// <summary>Số đo hiệu năng của luồng lưới (rỗng khi chưa có khung nào).</summary>
+    public Video.StreamSnapshot Perf => ThumbDecoder?.Stats.Snapshot() ?? default;
+
+    /// <summary>Dòng số đo ngắn trên tiêu đề ô: "12 fps · 480 kbps" (kèm ms giải mã khi đo được).</summary>
+    public string PerfText
+    {
+        get
+        {
+            if (!Store.Settings.ShowPerf) return "";
+            var p = Perf;
+            if (p.Frames <= 0) return "";
+            var text = $"{p.Fps:0} fps · {p.Kbps:N0} kbps";
+            if (p.DecodeMs > 0) text += $" · {p.DecodeMs:0.0} ms";
+            if (p.Dropped > 0) text += $" · {p.Dropped} drop";
+            return text;
+        }
+    }
+
     public string Tooltip =>
         $"{DisplayName}\n{Model} · Android {Android}\n{string.Join("\n", Transports.Select(t => t.Value.ToUpper() + ": " + t.Key))}{(Ip != "" ? "\nIP: " + Ip : "")}\n\n" +
         I18n.T("Click: chọn máy này · Ctrl+click: thêm/bớt vào nhóm · Nhấp đúp: mở lớn · Chuột phải: menu");
@@ -129,6 +147,8 @@ public sealed class PhoneDevice : INotifyPropertyChanged
     internal ScrcpySession? Thumb, Hq;
     internal H264Decoder? ThumbDecoder, HqDecoder;
     internal int HqRefs, HqFails;
+    /// <summary>Mức chất lượng đã dùng để mở luồng lưới hiện tại (để biết khi nào cần mở lại sau khi hạ mức).</summary>
+    internal VideoPlan? OpenedPlan;
     internal int RestartDelayMs = 1000;
     /// <summary>Số lần liên tiếp không khởi động được scrcpy-server + lỗi gần nhất (giữ hiện trên ô trong lúc thử lại).</summary>
     internal int StartFails;
@@ -162,6 +182,9 @@ public sealed class PhoneDevice : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
     void Raise(string n) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
+
+    /// <summary>Chỉ cập nhật dòng số đo — không vẽ lại toàn bộ ô (lưới 300 máy vẫn nhẹ).</summary>
+    public void RaisePerf() => Raise(nameof(PerfText));
     /// <summary>Cập nhật mọi ràng buộc hiển thị của ô.</summary>
     public void Changed() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
 }

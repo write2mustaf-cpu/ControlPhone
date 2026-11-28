@@ -81,6 +81,7 @@ public partial class MainWindow : Window
         InitViewer();
         InitInput();
         InitToasts();
+        InitAutoQuality();
         ApplyModeUi();
 
         Loaded += (_, _) =>
