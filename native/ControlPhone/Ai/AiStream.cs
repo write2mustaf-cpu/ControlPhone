@@ -97,6 +97,9 @@ public sealed class StreamAccumulator
     public int OutputTokens { get; private set; }
     public bool Empty => text.Length == 0 && calls.Count == 0 && streamingCalls.Count == 0;
 
+    /// <summary>Đã nhận được chữ nào chưa (khác <see cref="Empty"/>: có thể chỉ có công cụ dở).</summary>
+    public bool HasText => text.Length > 0;
+
     public string Text => text.ToString();
 
     public AiReply Result()
@@ -109,6 +112,15 @@ public sealed class StreamAccumulator
             Usage = new AiUsage(InputTokens, OutputTokens),
         };
     }
+
+    /// <summary>
+    /// Luồng vỡ giữa chừng (quá thời gian, mạng rơi): giữ phần chữ đã nhận thay vì vứt đi rồi gửi lại cả câu — gửi lại vừa
+    /// tốn tiền của người dùng vừa làm chữ đang hiện trên màn hình biến mất. Lời gọi công cụ dở dang bị bỏ: harg JSON của
+    /// nó có thể bị cắt, chạy một công cụ với tham số nửa vời còn tệ hơn không chạy.
+    /// </summary>
+    public AiReply? Partial() => HasText
+        ? new AiReply { Text = text.ToString().Trim(), Incomplete = true }
+        : null;
 
     /// <summary>Nhận một sự kiện; trả về phần chữ mới để hiện dần (có thể rỗng).</summary>
     public string Feed(SseEvent ev)

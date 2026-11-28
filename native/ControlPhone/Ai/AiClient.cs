@@ -357,7 +357,8 @@ public static class AiClient
             return acc.Empty ? null : acc.Result();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch { return null; }
+        // Quá thời gian hoặc mạng rơi giữa luồng: trả phần đã nhận (nếu có chữ) để nơi gọi không gửi lại cả câu.
+        catch { return acc.Partial(); }
     }
 
     static async Task<(int Status, string Body, string? Error)> SendAsync(AiHttpRequest req, int timeoutSeconds, CancellationToken ct)

@@ -944,4 +944,5 @@ export default {
   "Số lần Windows ghi nhận ControlPhone bị lỗi": "عدد المرات التي سجّل فيها Windows تعطّل ControlPhone",
   "Tệp kết xuất lỗi của Windows": "ملفات تفريغ الأعطال من Windows",
   "Lần Windows Defender phát hiện ControlPhone": "مرات اكتشاف Windows Defender لـ ControlPhone",
+  "…(câu trả lời bị cắt: quá thời gian chờ hoặc mất kết nối — hãy thử lại)": "…(قُطع الرد: انتهت المهلة أو انقطع الاتصال — أعد المحاولة)",
 };

@@ -944,4 +944,5 @@ export default {
   "Số lần Windows ghi nhận ControlPhone bị lỗi": "Times Windows recorded a ControlPhone crash",
   "Tệp kết xuất lỗi của Windows": "Crash dump files from Windows",
   "Lần Windows Defender phát hiện ControlPhone": "Windows Defender detections of ControlPhone",
+  "…(câu trả lời bị cắt: quá thời gian chờ hoặc mất kết nối — hãy thử lại)": "…(the answer was cut off: timeout or lost connection — try again)",
 };

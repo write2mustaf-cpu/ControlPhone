@@ -63,14 +63,19 @@ public sealed class AiAgent(AiToolHost tools)
                 return;
             }
 
+            // Luồng bị cắt giữa chừng: chữ đã hiện là thật, nhưng phải nói rõ là thiếu — người dùng không được đọc một câu
+            // trả lời cụt mà tưởng là đủ.
+            var text = reply.Incomplete && reply.Text.Length > 0
+                ? reply.Text + "\n\n" + Core.I18n.T("…(câu trả lời bị cắt: quá thời gian chờ hoặc mất kết nối — hãy thử lại)")
+                : reply.Text;
             var assistant = new AiMessage
             {
                 Role = "assistant",
-                Content = reply.Text,
+                Content = text,
                 ToolCalls = reply.ToolCalls.Count > 0 ? reply.ToolCalls : null,
             };
             chat.Messages.Add(assistant);
-            if (!string.IsNullOrEmpty(reply.Text)) Emit(new AiEvent(AiEventKind.AssistantText, reply.Text));
+            if (!string.IsNullOrEmpty(reply.Text)) Emit(new AiEvent(AiEventKind.AssistantText, text));
 
             if (reply.ToolCalls.Count == 0)
             {
