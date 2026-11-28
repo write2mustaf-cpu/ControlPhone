@@ -56,6 +56,7 @@ public static class SelfCheck
             TypingChecks();
             ManualOrderChecks();
             KeyboardChecks();
+            TargetChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -947,6 +948,39 @@ public static class SelfCheck
         Check(PcKeyboard.RestoreOrder(null, []).Count == 0, "no other keyboard means an empty plan");
         Check(PcKeyboard.RestoreOrder(null, [voice]).SequenceEqual([voice]), "voice is still better than no keyboard");
         Check(PcKeyboard.RestoreOrder("  " + samsung + " ", [samsung, gboard])[0] == samsung, "whitespace around the saved name is ignored");
+    }
+
+    // ---------------- chọn máy cho trợ lý AI: mơ hồ thì từ chối, không đoán ----------------
+    static void TargetChecks()
+    {
+        static Ai.AiToolHost.PhoneTarget T(string id, int num, string name) => new(id, num, name, "online");
+        var phones = new List<Ai.AiToolHost.PhoneTarget>
+        {
+            T("SER1", 1, "Pixel 8"), T("SER2", 2, "Pixel 8 Pro"), T("SER3", 3, "Galaxy A54"), T("SER4", 4, "Máy A"),
+        };
+        var (hit, why) = Ai.AiToolHost.MatchOne(phones, "SER3");
+        Check(hit?.Num == 3, "a serial resolves the phone", why);
+        Check(Ai.AiToolHost.MatchOne(phones, "#2").Hit?.Num == 2 && Ai.AiToolHost.MatchOne(phones, "2").Hit?.Num == 2,
+            "a number with or without '#' resolves");
+        Check(Ai.AiToolHost.MatchOne(phones, "galaxy a54").Hit?.Num == 3, "a name is case-insensitive");
+
+        // "Pixel" khớp 2 máy: chọn máy đầu tiên là gửi lệnh xoá dữ liệu/gỡ ứng dụng lên máy người dùng không chỉ định.
+        var (ambiguous, why2) = Ai.AiToolHost.MatchOne(phones, "Pixel");
+        Check(ambiguous == null && why2.Contains("matches 2 phones"), "an ambiguous name is refused, not guessed", why2);
+        var (unknown, why3) = Ai.AiToolHost.MatchOne(phones, "iPhone");
+        Check(unknown == null && why3.Contains("nothing matches"), "an unknown name is reported", why3);
+        var (missing, why4) = Ai.AiToolHost.MatchOne(phones, "9");
+        Check(missing == null && why4.Contains("no phone has the number"), "a number that does not exist is reported", why4);
+        Check(Ai.AiToolHost.MatchOne(phones, "  ").Hit == null, "an empty entry is refused");
+
+        // Hai máy trùng tên: tên chính xác cũng không đủ để chọn.
+        var twins = new List<Ai.AiToolHost.PhoneTarget> { T("A", 1, "Máy A"), T("B", 2, "Máy A") };
+        var (twin, why5) = Ai.AiToolHost.MatchOne(twins, "Máy A");
+        Check(twin == null && why5.Contains("2 phones are called"), "duplicate names are refused", why5);
+
+        // Một phần tên chỉ khớp một máy thì vẫn tiện: "Galaxy" → #3.
+        Check(Ai.AiToolHost.MatchOne(phones, "Galaxy").Hit?.Num == 3, "a unique partial name still resolves");
+        Check(Ai.AiToolHost.MatchOne(phones, "Máy A").Hit?.Num == 4, "a Vietnamese name resolves");
     }
 
     static void SupportChecks()

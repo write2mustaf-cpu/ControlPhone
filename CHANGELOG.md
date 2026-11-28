@@ -3,6 +3,41 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.20.0 — the AI could run a command on a phone you never named
+
+### The bug
+Tool arguments name phones by number, name or id. The resolver took the **first** device whose name *contained* the token:
+
+```csharp
+?? devices.FirstOrDefault(d => d.Name.Contains(t, StringComparison.OrdinalIgnoreCase));
+```
+
+With `Pixel 8` and `Pixel 8 Pro` connected, `"Pixel"` silently picked `#1`. With two phones both labelled `Máy A`, an exact
+name silently picked the first. And a token that matched nothing was **dropped without a word**, so
+`devices: ["#3", "Pixel 9"]` ran on `#3` only while the tool reported success. Every sensitive tool — `shell`,
+`app_control` (clear data, uninstall), `install_apk`, `push_file`, `device_action` — went through this path.
+
+### The fix
+`AiToolHost.MatchOne(devices, token)` is now the only way a token becomes a phone:
+
+| Input | Result |
+|---|---|
+| `SER3` / `3` / `#3` | that phone |
+| `galaxy a54` | that phone (case-insensitive exact name) |
+| `Galaxy` | that phone — partial name allowed **only** when exactly one matches |
+| `Pixel` (with `Pixel 8`, `Pixel 8 Pro`) | **refused**: `"Pixel" matches 2 phones (#1, #2)` |
+| `Máy A` on two phones | **refused**: `2 phones are called "Máy A"` |
+| `9` (no such number) | **refused**: `no phone has the number 9` |
+
+`Resolve` now throws when any entry cannot be resolved to exactly one phone, so the tool returns an error listing the
+problem and the known phones — **nothing runs**, instead of running on a subset. The tool description sent to the model
+says so too.
+
+### Verification
+- Self-check 308 → **318**: serial, number with and without `#`, case-insensitive name, unique partial name, Vietnamese
+  name, ambiguous partial name refused, duplicate names refused, unknown name refused, missing number refused, empty entry
+  refused.
+
 ## 3.19.0 — Arabic and English are now complete, and CI keeps them that way
 
 ### The gap

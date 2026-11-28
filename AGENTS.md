@@ -63,7 +63,7 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (308 checks as of 3.19.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (318 checks as of 3.20.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
 ## Data files
@@ -76,6 +76,11 @@ npm run i18n:check                  # key coverage per language
 - `node tools/i18n-native.js --strict` runs in CI and fails when ar or en miss a string. The extractor skips
   `Core/SelfCheck.cs` (test fixtures) and interpolation fragments — do not "translate" those.
 - Self-check asserts the whole ar pack: no value left in Vietnamese, every value has Arabic script, `{n}` placeholders kept.
+
+## AI device targeting
+- `AiToolHost.MatchOne(devices, token)` is the only place a device token becomes a phone: id, number (`3` or `#3`),
+  exact name, then a unique partial name. Ambiguous or unknown tokens are refused and `Resolve` throws — sensitive tools
+  must never run on a phone the user did not name.
 
 ## PC keyboard mode
 - `PcKeyboard` installs an invisible IME. Turning it off must never leave the phone without an on-screen keyboard:
