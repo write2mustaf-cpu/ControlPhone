@@ -63,7 +63,7 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (318 checks as of 3.20.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (326 checks as of 3.21.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
 ## Data files
@@ -76,6 +76,16 @@ npm run i18n:check                  # key coverage per language
 - `node tools/i18n-native.js --strict` runs in CI and fails when ar or en miss a string. The extractor skips
   `Core/SelfCheck.cs` (test fixtures) and interpolation fragments — do not "translate" those.
 - Self-check asserts the whole ar pack: no value left in Vietnamese, every value has Arabic script, `{n}` placeholders kept.
+
+## Design system
+- Every colour comes from `Theme.Palette` (key → dark/light hex) and is applied as `DynamicResource`, so switching theme is a
+  value swap; `Theme.Apply` also rebuilds the `AccentGrad` gradient. Never hardcode a hex in XAML or code.
+- Tokens: radii `Theme.RCtl/RCard/RPill` (used via `{x:Static local:Theme.*}`), font scale `FsCap < FsBody < FsH2 < FsH1`,
+  `Theme.ThemeInvariant` lists colours that are intentionally identical in both themes (screen, scrims on the phone image).
+- Self-check enforces WCAG: body text ≥ 7:1, muted/status colours ≥ 4.5:1, white on the gradient ends and on toasts ≥ 4.5:1,
+  and that every `Theme.Required` key exists. Adding a colour means adding a check-worthy contrast pair.
+- Controls are templated in `App.xaml`: buttons tint on hover with an overlay (works on gradients too) and show a keyboard
+  focus ring; shadows are limited to tooltips, popups, primary buttons and the hovered tile so the grid stays cheap.
 
 ## AI device targeting
 - `AiToolHost.MatchOne(devices, token)` is the only place a device token becomes a phone: id, number (`3` or `#3`),

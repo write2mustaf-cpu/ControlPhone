@@ -57,6 +57,7 @@ public static class SelfCheck
             ManualOrderChecks();
             KeyboardChecks();
             TargetChecks();
+            ThemeChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -981,6 +982,54 @@ public static class SelfCheck
         // Một phần tên chỉ khớp một máy thì vẫn tiện: "Galaxy" → #3.
         Check(Ai.AiToolHost.MatchOne(phones, "Galaxy").Hit?.Num == 3, "a unique partial name still resolves");
         Check(Ai.AiToolHost.MatchOne(phones, "Máy A").Hit?.Num == 4, "a Vietnamese name resolves");
+    }
+
+    // ---------------- giao diện: bảng màu, thước đo, độ tương phản WCAG ----------------
+    static void ThemeChecks()
+    {
+        var missing = Theme.Required.Where(k => !Theme.Palette.ContainsKey(k)).ToList();
+        Check(missing.Count == 0, "every brush used by the UI is in the palette", string.Join(", ", missing));
+
+        var broken = new List<string>();
+        foreach (var (key, (dark, light)) in Theme.Palette)
+            foreach (var hex in new[] { dark, light })
+                try { Theme.Parse(hex); } catch { broken.Add($"{key}={hex}"); }
+        Check(broken.Count == 0, "every colour parses", string.Join(", ", broken));
+
+        var same = Theme.Palette.Where(kv => !Theme.ThemeInvariant.Contains(kv.Key) && kv.Value.Dark == kv.Value.Light)
+            .Select(kv => kv.Key).ToList();
+        Check(same.Count == 0, "light and dark really differ", string.Join(", ", same));
+
+        // chữ trên nền: thân bài ≥ 7:1 (AAA), chữ phụ và màu trạng thái ≥ 4,5:1 (AA)
+        var weak = new List<string>();
+        foreach (var theme in new[] { "dark", "light" })
+        {
+            string C(string key) => theme == "dark" ? Theme.Palette[key].Dark : Theme.Palette[key].Light;
+            void Need(string fg, string bg, double min) {
+                var r = Theme.Contrast(C(fg), C(bg));
+                if (r < min) weak.Add($"{theme} {fg}/{bg} {r:0.00}");
+            }
+            Need("Text", "Bg", 7); Need("Text", "Bg2", 7); Need("Text", "Hover", 7);
+            Need("Muted", "Bg", 4.5); Need("Muted", "Bg2", 4.5);
+            Need("Ok", "Bg", 4.5); Need("Warn", "Bg", 4.5); Need("Bad", "Bg", 4.5); Need("Accent", "Bg", 4.5);
+            var (start, stop) = Theme.AccentStops(theme);
+            if (Theme.Contrast("#FFFFFF", start) < 4.5) weak.Add($"{theme} white/grad-start");
+            if (Theme.Contrast("#FFFFFF", stop) < 4.5) weak.Add($"{theme} white/grad-stop");
+            if (Theme.Contrast("#FFFFFF", C("ToastOk")) < 4.5) weak.Add($"{theme} white/ToastOk");
+            if (Theme.Contrast("#FFFFFF", C("ToastErr")) < 4.5) weak.Add($"{theme} white/ToastErr");
+            if (Theme.Contrast("#FFFFFF", C("ToastInfo")) < 4.5) weak.Add($"{theme} white/ToastInfo");
+        }
+        Check(weak.Count == 0, "text keeps WCAG contrast in both themes", string.Join(" · ", weak));
+
+        Check(Theme.RCtl < Theme.RCard && Theme.RCard < Theme.RPill, "corner radii are a scale",
+            $"{Theme.RCtl} < {Theme.RCard} < {Theme.RPill}");
+        Check(Theme.FsCap < Theme.FsBody && Theme.FsBody < Theme.FsH2 && Theme.FsH2 < Theme.FsH1, "font sizes are a scale",
+            $"{Theme.FsCap} < {Theme.FsBody} < {Theme.FsH2} < {Theme.FsH1}");
+
+        var soft = Theme.Parse(Theme.Palette["AccentSoft"].Dark);
+        Check(soft.A is > 0 and < 255, "soft accent is translucent (tints any surface)", $"alpha {soft.A}");
+        Check(Theme.Contrast("#000000", "#FFFFFF") is > 20.9 and < 21.1, "contrast helper matches WCAG extremes",
+            Theme.Contrast("#000000", "#FFFFFF").ToString("0.00"));
     }
 
     static void SupportChecks()

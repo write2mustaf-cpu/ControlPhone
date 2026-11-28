@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ControlPhone"
         Title="ControlPhone" Width="1500" Height="920" MinWidth="900" MinHeight="560" WindowState="Maximized"
-        Background="{DynamicResource Bg}" Foreground="{DynamicResource Text}" FontFamily="Segoe UI" FontSize="12.5"
+        Background="{DynamicResource Bg}" Foreground="{DynamicResource Text}" FontFamily="{StaticResource UiFont}" FontSize="{x:Static local:Theme.FsBody}"
         UseLayoutRounding="True" AllowDrop="True">
     <Grid>
         <Grid.RowDefinitions>
@@ -12,24 +12,27 @@
         </Grid.RowDefinitions>
 
         <!-- ================= thanh trên ================= -->
-        <Border Background="{DynamicResource Bg2}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="8,7">
+        <Grid Grid.Row="0">
+        <!-- dải màu nhận diện, 2px, chạy hết chiều ngang -->
+        <Border Height="2" VerticalAlignment="Top" Background="{DynamicResource AccentGrad}"/>
+        <Border Background="{DynamicResource Bg2}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1" Padding="8,9,8,7">
             <DockPanel LastChildFill="False">
                 <Button x:Name="BtnSidebar" Style="{DynamicResource IconGhost}" Content="&#xE700;" ToolTip="Ẩn/hiện thanh bên"/>
-                <Border Width="24" Height="24" CornerRadius="6" Background="{DynamicResource Accent}" Margin="6,0,8,0" VerticalAlignment="Center">
+                <Border Width="26" Height="26" CornerRadius="8" Background="{DynamicResource AccentGrad}" Margin="6,0,9,0" VerticalAlignment="Center" Effect="{StaticResource AccentGlow}">
                     <TextBlock Text="&#xE8EA;" FontFamily="{StaticResource IconFont}" Foreground="White" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
-                <TextBlock Text="ControlPhone" FontSize="15" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,14,0" Tag="no-i18n"/>
-                <Border Background="{DynamicResource Bg3}" CornerRadius="7" Padding="9,4" Margin="0,0,6,0" VerticalAlignment="Center" ToolTip="Máy đang hoạt động / tổng">
+                <TextBlock Text="ControlPhone" Style="{StaticResource H2}" VerticalAlignment="Center" Margin="0,0,14,0" Tag="no-i18n"/>
+                <Border Style="{StaticResource Pill}" Margin="0,0,6,0" ToolTip="Máy đang hoạt động / tổng">
                     <StackPanel Orientation="Horizontal">
                         <Ellipse Width="8" Height="8" Fill="{DynamicResource Ok}" Margin="0,0,6,0" VerticalAlignment="Center"/>
                         <TextBlock x:Name="StatOnline" Text="0" FontWeight="Bold" Tag="no-i18n"/>
                         <TextBlock x:Name="StatTotal" Text="/0 online" Foreground="{DynamicResource Muted}" Tag="no-i18n"/>
                     </StackPanel>
                 </Border>
-                <Border Background="{DynamicResource Bg3}" CornerRadius="7" Padding="9,4" Margin="0,0,6,0" VerticalAlignment="Center" ToolTip="Số máy đang chọn">
+                <Border Style="{StaticResource Pill}" Margin="0,0,6,0" ToolTip="Số máy đang chọn">
                     <TextBlock x:Name="StatSel" Text="0 đã chọn" Tag="no-i18n"/>
                 </Border>
-                <Border Background="{DynamicResource Bg3}" CornerRadius="7" Padding="9,4" Margin="0,0,6,0" VerticalAlignment="Center" ToolTip="Tổng băng thông video từ tất cả điện thoại">
+                <Border Style="{StaticResource Pill}" Margin="0,0,6,0" ToolTip="Tổng băng thông video từ tất cả điện thoại">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="&#xE896;" FontFamily="{StaticResource IconFont}" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="{DynamicResource Muted}"/>
                         <TextBlock x:Name="StatBw" Text="0" FontWeight="SemiBold" Tag="no-i18n"/>
@@ -117,6 +120,7 @@
                 </Button>
             </DockPanel>
         </Border>
+        </Grid>
 
         <!-- ================= thân ================= -->
         <Grid Grid.Row="1">
@@ -133,14 +137,14 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="10,10,10,0">
                             <TextBox x:Name="SearchBox" Tag="Tìm số, tên, IP, serial…" Margin="0,0,0,12"/>
-                            <TextBlock Text="Bộ lọc" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Muted}" Margin="4,0,0,6"/>
+                            <TextBlock Text="Bộ lọc" Style="{StaticResource Section}"/>
                             <StackPanel x:Name="FiltersPanel" Margin="0,0,0,12"/>
                             <DockPanel Margin="4,0,0,6">
                                 <Button x:Name="BtnNewGroup" DockPanel.Dock="Right" Style="{DynamicResource IconGhost}" Width="24" Height="22" FontSize="11" Content="&#xE710;" ToolTip="Tạo nhóm"/>
-                                <TextBlock Text="Nhóm" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Muted}" VerticalAlignment="Center"/>
+                                <TextBlock Text="Nhóm" Style="{StaticResource Section}" Margin="4,0,0,0" VerticalAlignment="Center"/>
                             </DockPanel>
                             <StackPanel x:Name="GroupsPanel" Margin="0,0,0,12"/>
-                            <TextBlock Text="Kết nối" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Muted}" Margin="4,0,0,6"/>
+                            <TextBlock Text="Kết nối" Style="{StaticResource Section}"/>
                             <DockPanel Margin="0,0,0,6">
                                 <Button x:Name="BtnConnect" DockPanel.Dock="Right" Style="{DynamicResource Primary}" Width="36" Padding="0" Margin="6,0,0,0" ToolTip="Kết nối qua WiFi">
                                     <TextBlock Text="&#xE701;" FontFamily="{StaticResource IconFont}" Foreground="White"/>
@@ -172,8 +176,10 @@
                         </ItemsControl>
                     </ScrollViewer>
                     <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" IsHitTestVisible="False">
-                        <TextBlock x:Name="EmptyIcon" FontFamily="{StaticResource IconFont}" FontSize="42" HorizontalAlignment="Center" Foreground="{DynamicResource Muted}" Margin="0,0,0,10"/>
-                        <TextBlock x:Name="EmptyTitle" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" Tag="no-i18n"/>
+                        <Border Width="86" Height="86" CornerRadius="999" Background="{DynamicResource Bg3}" BorderBrush="{DynamicResource Line}" BorderThickness="1" HorizontalAlignment="Center" Margin="0,0,0,14">
+                            <TextBlock x:Name="EmptyIcon" FontFamily="{StaticResource IconFont}" FontSize="38" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource Muted}"/>
+                        </Border>
+                        <TextBlock x:Name="EmptyTitle" Style="{StaticResource H2}" HorizontalAlignment="Center" Tag="no-i18n"/>
                         <TextBlock x:Name="EmptyText" Foreground="{DynamicResource Muted}" HorizontalAlignment="Center" Margin="0,6,0,0" Tag="no-i18n"/>
                     </StackPanel>
                     <Canvas x:Name="MarqueeLayer" IsHitTestVisible="False">
@@ -190,7 +196,7 @@
                             <Button x:Name="VPrev" Style="{DynamicResource IconGhost}" Content="&#xE76B;" ToolTip="Máy trước"/>
                             <Button x:Name="VClose" DockPanel.Dock="Right" Style="{DynamicResource IconGhost}" Content="&#xE711;" ToolTip="Đóng (Esc)"/>
                             <Button x:Name="VNext" DockPanel.Dock="Right" Style="{DynamicResource IconGhost}" Content="&#xE76C;" ToolTip="Máy sau"/>
-                            <Border x:Name="VSync" DockPanel.Dock="Right" Background="#26FF9F1C" CornerRadius="9" Padding="8,2" Margin="4,0" VerticalAlignment="Center" Visibility="Collapsed">
+                            <Border x:Name="VSync" DockPanel.Dock="Right" Background="{DynamicResource WarnSoft}" CornerRadius="999" Padding="9,2" Margin="4,0" VerticalAlignment="Center" Visibility="Collapsed">
                                 <TextBlock x:Name="VSyncText" Foreground="{DynamicResource Warn}" FontSize="11" Tag="no-i18n"/>
                             </Border>
                             <StackPanel Margin="6,0" VerticalAlignment="Center">
@@ -204,11 +210,11 @@
                     </Border>
                     <Grid x:Name="VBody" Margin="8">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                        <Border x:Name="VScreen" Background="Black" CornerRadius="8" ClipToBounds="True" VerticalAlignment="Top" Focusable="True" FocusVisualStyle="{x:Null}" Cursor="Hand">
+                        <Border x:Name="VScreen" Background="{DynamicResource Screen}" CornerRadius="{x:Static local:Theme.CardRadius}" ClipToBounds="True" VerticalAlignment="Top" Focusable="True" FocusVisualStyle="{x:Null}" Cursor="Hand">
                             <Grid>
                                 <Image x:Name="VImg" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
-                                <Border x:Name="VOv" Background="#99000000" IsHitTestVisible="False">
-                                    <TextBlock x:Name="VOvText" Text="Đang mở luồng nét…" Foreground="#CCD0DD" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" Margin="12"/>
+                                <Border x:Name="VOv" Background="{DynamicResource ScrimSoft}" IsHitTestVisible="False">
+                                    <TextBlock x:Name="VOvText" Text="Đang mở luồng nét…" Foreground="{DynamicResource RingOnDark}" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" Margin="12"/>
                                 </Border>
                             </Grid>
                         </Border>
@@ -227,9 +233,9 @@
         </StackPanel>
 
         <!-- kéo thả tệp -->
-        <Border x:Name="DropOverlay" Grid.RowSpan="2" Visibility="Collapsed" Background="#CC0F1115" IsHitTestVisible="False">
-            <Border BorderBrush="{DynamicResource Accent}" BorderThickness="2" CornerRadius="14" Margin="30" Background="#22FFFFFF">
-                <TextBlock x:Name="DropText" FontSize="17" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" Margin="40" Tag="no-i18n"/>
+        <Border x:Name="DropOverlay" Grid.RowSpan="2" Visibility="Collapsed" Background="{DynamicResource Scrim}" IsHitTestVisible="False">
+            <Border BorderBrush="{DynamicResource Accent}" BorderThickness="2" CornerRadius="16" Margin="30" Background="{DynamicResource AccentSoft}">
+                <TextBlock x:Name="DropText" FontSize="17" Foreground="{DynamicResource TextOnDark}" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" Margin="40" Tag="no-i18n"/>
             </Border>
         </Border>
     </Grid>

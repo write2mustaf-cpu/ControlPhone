@@ -3,6 +3,39 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.21.0 — new look: one palette, real tokens, and contrast that is measured
+
+### What was wrong with the old look
+Colours were a dozen loose hex values, and several places ignored the theme entirely: the drag-and-drop overlay, the viewer
+overlay text, the phone-tile overlay and spinner, the root badge and the sync badge were dark-only hex literals, so in light
+mode they stayed dark. Buttons had `FocusVisualStyle="{x:Null}"`, i.e. no keyboard focus indication at all. Radii were 5, 6,
+7, 8, 9 and 14 depending on the file, font sizes were 10.5…15, and the primary button was flat blue with white text at
+**3.16:1** — below the 4.5:1 minimum for text.
+
+### The new design system
+| Layer | Before | Now |
+|---|---|---|
+| Colour | 12 hex values, some hardcoded in views | `Theme.Palette` (28 keys × dark/light), every view uses `DynamicResource` |
+| Accent | flat `#4F7CFF` | gradient `#3D6BF0 → #6D3FE0`, white text **4.61:1 / 6.11:1** |
+| Radii | 5…14 ad hoc | `RCtl 8` < `RCard 12` < `RPill` |
+| Type | 10.5…15 ad hoc | `FsCap 11` < `FsBody 12.5` < `FsH2 15` < `FsH1 18`, `Segoe UI Variable` with fallback |
+| Buttons | border change on hover, no focus | hover tint overlay (works on gradients), pressed state, **keyboard focus ring** |
+| Surfaces | flat borders | cards + pills, elevation only where it reads: tooltips, dropdowns, primary buttons, hovered tile |
+| Controls | default-ish | rounded text fields with hover/focus borders, gradient checkboxes, filled slider track, rounded progress bar, thin scrollbar with hover thumb |
+| Phone tile | 5 px corners, text-only header | 12 px card, numbered pill, hover shadow, 2 px selection ring, tokenised overlays |
+
+Light mode is now genuinely light: the overlay, spinner, badges and toasts all switch with the theme.
+
+### Verification
+- Self-check 318 → **326**: every brush the UI asks for exists in the palette, every colour parses, light and dark differ for
+  every theme-dependent key, and WCAG ratios are asserted in code — body text ≥ 7:1, muted and status colours ≥ 4.5:1,
+  white on both gradient ends ≥ 4.5:1, white on all three toast colours ≥ 4.5:1. The contrast helper is checked against the
+  black/white extremes (21:1).
+- Radii and font sizes are asserted to be a real scale, not random values.
+
+### Not verified
+No screenshot comparison: the runner has no interactive desktop. The checks cover tokens and contrast, not pixel layout.
+
 ## 3.20.0 — the AI could run a command on a phone you never named
 
 ### The bug
