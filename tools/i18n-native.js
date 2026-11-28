@@ -10,7 +10,8 @@ const keys = new Set();
 
 function walk(dir, out = []) {
   for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (['bin', 'obj', '.vs', 'CoreTest', 'keyboard'].includes(f.name)) continue; // CoreTest: chuỗi kiểm thử, không hiện cho người dùng
+    // CoreTest + SelfCheck: chuỗi kiểm thử, không bao giờ hiện cho người dùng (chúng làm danh sách dịch sai lệch)
+    if (['bin', 'obj', '.vs', 'CoreTest', 'keyboard'].includes(f.name) || f.name === 'SelfCheck.cs') continue;
     const p = path.join(dir, f.name);
     if (f.isDirectory()) walk(p, out); else if (/\.(cs|xaml)$/.test(f.name)) out.push(p);
   }
@@ -46,6 +47,15 @@ for (const file of walk(path.join(ROOT, 'native'))) {
   }
 }
 
+// Mảnh của câu nội suy ($"...{expr}...") và các chuỗi không phải câu dịch (tiêu đề đo hiệu năng, lớp ký tự regex,
+// nhãn đã đa ngữ) — dịch chúng là vô nghĩa và làm báo cáo "còn thiếu" sai.
+const NOT_A_SENTENCE = (k) =>
+  k.startsWith('# t |') ||
+  k.includes(')}') || k.startsWith(')') || k.endsWith('(') || k.includes('=>') ||
+  (/^\[[^\]]*\]$/.test(k) && !k.includes(' ')) ||
+  k === 'Ngôn ngữ / Language / اللغة';
+for (const k of [...keys]) if (NOT_A_SENTENCE(k)) keys.delete(k);
+
 const langDir = path.join(ROOT, 'public/js/lang');
 const out = {};
 for (const f of fs.readdirSync(langDir)) {
@@ -57,3 +67,15 @@ for (const f of fs.readdirSync(langDir)) {
 }
 if (process.argv[2] === '--json') fs.writeFileSync(process.argv[3], JSON.stringify(out['en.js'], null, 1));
 else out['en.js'].forEach((k) => console.log('   - ' + k));
+
+// --strict: CI chặn hồi quy cho hai ngôn ngữ bắt buộc đầy đủ (ar: giao diện Ả Rập, en: bản dự phòng của mọi ngôn ngữ).
+if (process.argv.includes('--strict')) {
+  let bad = 0;
+  for (const f of ['ar.js', 'en.js']) {
+    if (out[f].length === 0) continue;
+    bad = 1;
+    console.error(`${f}: ${out[f].length} untranslated string(s)`);
+    out[f].forEach((k) => console.error('   - ' + k));
+  }
+  process.exit(bad);
+}

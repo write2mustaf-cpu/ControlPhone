@@ -63,12 +63,19 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (301 checks as of 3.18.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (308 checks as of 3.19.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
 ## Data files
 - Settings: `data/config.json` (shared with the web build), UI prefs: `data/native-ui.json` — read `Store.UiFilePath`,
   never hardcode the name. The old `ui.json` name was a real bug in the diagnostics bundle.
+
+## Translations
+- Source language is Vietnamese: `I18n.T("<Vietnamese>")`; packs live in `public/js/lang/<code>.js` and are loaded from
+  `lang/<code>.js` next to the exe. Arabic and English are complete (912 keys each); de/fr/zh-CN/zh-TW still miss ~167.
+- `node tools/i18n-native.js --strict` runs in CI and fails when ar or en miss a string. The extractor skips
+  `Core/SelfCheck.cs` (test fixtures) and interpolation fragments — do not "translate" those.
+- Self-check asserts the whole ar pack: no value left in Vietnamese, every value has Arabic script, `{n}` placeholders kept.
 
 ## PC keyboard mode
 - `PcKeyboard` installs an invisible IME. Turning it off must never leave the phone without an on-screen keyboard:
