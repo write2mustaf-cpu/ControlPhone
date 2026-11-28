@@ -775,6 +775,36 @@ public static class SelfCheck
             DiagBundle.Build(zip, null, 5);
             Check(File.Exists(zip) && DiagBundle.Entries(zip).Length >= 4, "bundle can be rebuilt over an existing file");
             Check(ReadEntry(zip, "devices.txt").Contains("no phones connected"), "empty device list explained");
+
+            // Gói chẩn đoán phải mang đúng tệp tuỳ chọn giao diện mà ứng dụng thật sự ghi (native-ui.json). Bản cũ chép
+            // "ui.json" — tệp không tồn tại — nên gói gửi cho hỗ trợ thiếu theme/ngôn ngữ/RTL mà README vẫn hứa có.
+            var data = Path.Combine(dir, "data");
+            Directory.CreateDirectory(data);
+            File.WriteAllText(Path.Combine(data, "config.json"),
+                "{\"devices\":{\"SER1\":{\"label\":\"Máy A\"}},\"settings\":{\"note\":\"sk-live-ABCDEFGH1234\"}}");
+            File.WriteAllText(Path.Combine(data, "native-ui.json"),
+                "{\"theme\":\"light\",\"lang\":\"ar\",\"tileW\":240,\"sort\":\"name\",\"filter\":\"group:A\",\"skipVersion\":\"v9.9.9\"}");
+            var bundle = DiagBundle.Build(zip, ["#1\tMáy A\tusb\tonline\tAndroid 13"], 20, data);
+            var names = DiagBundle.Entries(bundle);
+            Check(names.Contains("settings/native-ui.json"), "bundle carries the real UI prefs file", string.Join(",", names.Where(n => n.StartsWith("settings/"))));
+            Check(!names.Contains("settings/ui.json"), "bundle no longer pretends ui.json exists");
+            var ui = ReadEntry(bundle, "settings/native-ui.json");
+            Check(ui.Contains("\"light\"") && ui.Contains("\"ar\"") && ui.Contains("group:A") && ui.Contains("v9.9.9"),
+                "theme, language, filter and skipped version survive into the bundle");
+            var cfg = ReadEntry(bundle, "settings/config.json");
+            Check(cfg.Contains("Máy A") && !cfg.Contains("sk-live-ABCDEFGH1234") && cfg.Contains("••••"), "config is included with keys masked");
+            var readme = ReadEntry(bundle, "README.txt");
+            var listed = readme.Split('\n')
+                .Select(l => System.Text.RegularExpressions.Regex.Match(l, @"^  ([A-Za-z0-9_./\-]+\.(?:txt|json|log))"))
+                .Where(m => m.Success).Select(m => m.Groups[1].Value).ToList();
+            Check(listed.Contains("settings/native-ui.json") && !listed.Contains("settings/ui.json") && !listed.Contains("ai.json"),
+                "README lists the UI prefs file and never ui.json or ai.json", string.Join(",", listed));
+            Check(listed.Count == names.Count(n => n != "README.txt") && names.Where(n => n != "README.txt").All(listed.Contains),
+                "README lists exactly the entries in the bundle", string.Join(",", listed));
+            File.Delete(Path.Combine(data, "native-ui.json"));
+            var bare = DiagBundle.Entries(DiagBundle.Build(zip, null, 5, data));
+            Check(!bare.Contains("settings/native-ui.json") && !ReadEntry(zip, "README.txt").Contains("settings/native-ui.json"),
+                "a missing UI file is neither copied nor promised");
         }
         finally { try { Directory.Delete(dir, true); } catch { } }
     }
