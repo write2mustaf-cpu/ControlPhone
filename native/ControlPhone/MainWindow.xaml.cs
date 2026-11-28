@@ -114,7 +114,11 @@ public partial class MainWindow : Window
                     OpLog.Add("Chế độ an toàn đang bật cho phiên này");
                 }
                 // cửa sổ đã dựng xong và vẽ được ⇒ lần chạy này không tính là hỏng
-                _ = Task.Delay(8000).ContinueWith(_ => Dispatcher.BeginInvoke(() => SessionGuard.Ready()));
+                _ = Task.Delay(8000).ContinueWith(_ => Dispatcher.BeginInvoke(() =>
+                {
+                    SessionGuard.Ready();
+                    StartupTrace.Mark("ready", SafeMode.Active ? "safe mode" : "");
+                }));
             }
             if (!SelfTest.On) StallWatch.Start(Dispatcher);
             PerfLog.Start(Dispatcher, () => $"ô {PhoneTile.Live.Count} · online {manager.Devices.Count(d => d.IsOnline)} · có hình {manager.Devices.Count(d => d.HasFrame)} · tăng tốc {manager.Devices.Count(d => d.Boost != null)}");

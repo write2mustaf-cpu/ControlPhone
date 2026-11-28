@@ -33,6 +33,7 @@ public static class DiagBundle
         written.Add(Put(zip, "versions.txt", Versions()));
         written.Add(Put(zip, "devices.txt", Devices(deviceLines)));
         written.Add(Put(zip, "oplog.txt", OpLog.Format(Math.Clamp(opLines, 1, 600))));
+        written.AddRange(Copy(zip, "logs/startup.log", StartupTrace.Path));
         written.AddRange(Copy(zip, "logs/crash.log", Crash.LogPath));
         written.AddRange(Copy(zip, "logs/crash.log.1", Crash.LogPath + ".1"));
         written.AddRange(Copy(zip, "settings/config.json", Path.Combine(data, "config.json")));
