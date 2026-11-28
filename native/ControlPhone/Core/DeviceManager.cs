@@ -1179,15 +1179,38 @@ public sealed class DeviceManager : IDisposable
             if (!d.IsOnline) { d.WatchSince = now; d.WatchKf = false; continue; }
             if ((d.Frames?.Frames ?? 0) > d.WatchFrames) { d.Watching = false; continue; }
             var age = now - d.WatchSince;
-            if (age > 6000)
+            switch (StreamWatchdog.Decide(true, d.Thumb.Options.Video, age, d.WatchResets, now - d.WatchRestart))
             {
-                if (d.WatchResets >= 3) { d.Watching = false; continue; }
-                d.ThumbDecoder?.Resume();
-                d.Thumb?.RequestKeyFrame();
-                d.WatchSince = now; d.WatchKf = true; d.WatchResets++;
+                case RecoveryStep.KeyFrame when !d.WatchKf:
+                    d.Thumb?.RequestKeyFrame(); d.WatchKf = true; d.WatchResets++;
+                    break;
+                case RecoveryStep.Reset:
+                    d.ThumbDecoder?.Resume();
+                    d.Thumb?.RequestKeyFrame();
+                    d.WatchSince = now; d.WatchKf = true; d.WatchResets++;
+                    break;
+                case RecoveryStep.Restart:
+                    RestartThumb(d, age);
+                    break;
             }
-            else if (age > 2500 && !d.WatchKf) { d.Thumb?.RequestKeyFrame(); d.WatchKf = true; }
         }
+    }
+
+    /// <summary>
+    /// Dựng lại riêng luồng lưới của một máy khi keyframe không còn tới: giữ phiên cũ nhận điều khiển tới khi phiên mới
+    /// chạy (như <see cref="SyncThumbMode"/>) để không có khoảng trống mất thao tác, và ghi lại một dòng vào nhật ký máy.
+    /// </summary>
+    void RestartThumb(PhoneDevice d, long stalledMs)
+    {
+        var t = d.Thumb;
+        d.Thumb = null;
+        if (t is { Running: true }) { d.PrevThumb?.Dispose(); d.PrevThumb = t; } else t?.Dispose();
+        d.HasFrame = false;
+        EnsureThumb(d);
+        DeviceLog.Add(d.Id, $"watchdog: dựng lại luồng lưới — không có khung {stalledMs / 1000:0.0} giây");
+        StartWatch(d);
+        d.WatchRestart = Environment.TickCount64;
+        Changed(d);
     }
 
     /// <summary>Ô vào/ra vùng nhìn thấy (chỉ giải mã ô đang thấy).</summary>

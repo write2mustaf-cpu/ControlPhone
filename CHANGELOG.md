@@ -3,6 +3,39 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.30.0 — a frozen tile heals itself
+
+The grid watchdog asked for a keyframe after 2.5 s, woke the decoder after 6 s, and after three attempts gave up:
+
+```csharp
+if (d.WatchResets >= 3) { d.Watching = false; continue; }   // 3.29.0: gives up
+```
+
+That is the worst failure mode for a control room. The tile keeps the last frame it drew, the status dot stays green, the
+phone answers touches — and the operator thinks a phone is idle while its stream is dead. Recovery meant opening each phone
+by hand.
+
+### The policy, in one testable function
+
+`Core/StreamWatchdog.Decide(online, video, msSinceProgress, attempts, msSinceRestart)`
+
+| Elapsed without a frame | Attempts so far | Action |
+|---|---|---|
+| < 2.5 s | — | nothing, frames are just slow |
+| ≥ 2.5 s | 0 | ask for a keyframe |
+| ≥ 6 s | 1-2 | wake the decoder, ask again |
+| ≥ 6 s | 3 | **rebuild the session** |
+| any | 3+ and rebuilt < 60 s ago | wait — never hammer a broken phone |
+
+`DeviceManager.RestartThumb` rebuilds only that phone's grid stream, keeps the old session answering touches until the new
+one is running (the hand-over `SyncThumbMode` already used, so no gap where a tap is lost), and writes one line to that
+phone's own log — `watchdog: dựng lại luồng lưới — không có khung 12.4 giây` — so the cause is visible later.
+
+### Verification
+- Self-check 404 → **415**.
+- The policy also ran in a Linux harness, **12/12**, including a three-minute simulation of a completely dead phone: exactly
+  **3 rebuilds**, not a loop.
+
 ## 3.29.0 — a cut answer is still an answer
 
 Streaming exists so text appears as it arrives. But when a provider stopped mid-answer — timeout, dropped socket, laptop
