@@ -3,6 +3,44 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.22.0 — a long AI chat (or pressing Stop) broke the conversation for good
+
+### The bug
+The history sent to the provider was "the last 60 messages", cut wherever that landed:
+
+```csharp
+if (usable.Count > 60) usable = usable.Skip(usable.Count - 60).ToList();
+```
+
+Two ways that produces a request the provider rejects:
+
+| Situation | What was sent | What came back |
+|---|---|---|
+| 60-message cut lands inside a tool exchange | first message is `role: tool` with no preceding `tool_calls` | OpenAI **400**: "messages with role 'tool' must be a response to a preceding message with 'tool_calls'" |
+| any history shorter than 60 that starts with a tool result (restored chat, earlier trim) | same | Anthropic **400**: first message must use the `user` role |
+| user presses **Stop** while several tool calls are queued | assistant with 3 `tool_calls`, 1 tool result | OpenAI **400** on the next request |
+
+Because the broken messages stay in the chat, every later request failed the same way: the conversation was dead until the
+user deleted it. It needed no exotic setup — one long agentic session, or one Stop, was enough.
+
+### The fix
+`AiAgent.Window(messages, max = 60)` now builds the request:
+
+```
+filter errors / empty assistant turns
+  ─► keep the last 60
+  ─► start at the first `user` turn (drops a half-cut exchange)
+  ─► drop tool calls with no result, drop assistant turns left with no calls
+  ─► drop tool results whose call is no longer in the window
+```
+
+The current user turn is always the last message, so trimming always leaves a valid, non-empty request.
+
+### Verification
+- Self-check 326 → **334**: cut exchange starts at a user turn, 120-message chat capped at 60 and still aligned, unanswered
+  calls dropped, assistant with no answered call dropped, orphan tool result dropped, error/empty turns dropped, a valid
+  exchange preserved in order with its call id, newest user turn never cut.
+
 ## 3.21.0 — new look: one palette, real tokens, and contrast that is measured
 
 ### What was wrong with the old look

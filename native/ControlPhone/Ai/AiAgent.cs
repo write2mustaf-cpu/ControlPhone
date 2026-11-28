@@ -46,7 +46,7 @@ public sealed class AiAgent(AiToolHost tools)
             ct.ThrowIfCancellationRequested();
             Emit(new AiEvent(AiEventKind.Status, round == 0 ? "thinking" : "continuing"));
 
-            var history = BuildHistory(chat, provider);
+            var history = BuildHistory(chat);
             // Phát trực tiếp chỉ để hiện chữ dần dần; nếu nhà cung cấp không hỗ trợ (null) thì gọi cách thường.
             AiReply? streamed = null;
             if (settings.Stream)
@@ -151,22 +151,45 @@ public sealed class AiAgent(AiToolHost tools)
     };
 
     /// <summary>Lịch sử gửi cho nhà cung cấp: bỏ câu lỗi, gộp lại cho gọn, cắt bớt nếu quá dài.</summary>
-    static List<AiMessage> BuildHistory(AiChat chat, AiProvider provider)
+    static List<AiMessage> BuildHistory(AiChat chat) => Window(chat.Messages);
+
+    /// <summary>
+    /// Cửa sổ hội thoại gửi cho nhà cung cấp. Cắt 60 lượt cuối là chưa đủ: cắt ngang một cặp "gọi công cụ / kết quả" thì
+    /// OpenAI trả 400 ("messages with role 'tool' must be a response to a preceding message with 'tool_calls'") và Anthropic
+    /// đòi lượt đầu là user — hội thoại hỏng vĩnh viễn cho tới khi người dùng xoá nó. Vì vậy: bắt đầu ở lượt người dùng,
+    /// bỏ lời gọi không có kết quả, bỏ kết quả mồ côi.
+    /// </summary>
+    public static List<AiMessage> Window(IReadOnlyList<AiMessage> all, int max = 60)
     {
-        var list = new List<AiMessage>();
-        var usable = chat.Messages.Where(m => !m.Error && !(m.Role == "assistant" && string.IsNullOrEmpty(m.Content) && m.ToolCalls == null)).ToList();
-        // giữ tối đa ~60 lượt gần nhất (tiết kiệm token, vẫn đủ ngữ cảnh)
-        if (usable.Count > 60) usable = usable.Skip(usable.Count - 60).ToList();
+        var usable = all
+            .Where(m => !m.Error && !(m.Role == "assistant" && string.IsNullOrEmpty(m.Content) && m.ToolCalls is not { Count: > 0 }))
+            .ToList();
+        if (max > 0 && usable.Count > max) usable = usable.Skip(usable.Count - max).ToList();
+
+        // lượt hiện tại của người dùng luôn là cuối danh sách, nên bỏ phần đầu dở dang luôn còn ít nhất một lượt
+        var first = usable.FindIndex(m => m.Role == "user");
+        if (first > 0) usable = usable.Skip(first).ToList();
+
+        var answered = usable.Where(m => m.Role == "tool" && !string.IsNullOrEmpty(m.ToolCallId))
+                             .Select(m => m.ToolCallId!).ToHashSet();
+        var kept = new List<AiMessage>(usable.Count);
         foreach (var m in usable)
-            list.Add(new AiMessage
+        {
+            if (m.Role == "tool") { kept.Add(m); continue; }
+            if (m.Role == "assistant" && m.ToolCalls is { Count: > 0 } calls)
             {
-                Role = m.Role,
-                Content = m.Content,
-                ToolCalls = m.ToolCalls,
-                ToolCallId = m.ToolCallId,
-                ToolName = m.ToolName,
-            });
-        return list;
+                var live = calls.Where(c => answered.Contains(c.Id)).ToList();
+                if (live.Count == 0 && string.IsNullOrEmpty(m.Content)) continue;
+                kept.Add(new AiMessage { Role = m.Role, Content = m.Content, ToolCalls = live.Count > 0 ? live : null });
+                continue;
+            }
+            kept.Add(m);
+        }
+
+        // kết quả công cụ chỉ hợp lệ khi lời gọi của nó còn trong cửa sổ (assistant bị cắt khỏi đầu)
+        var callsInWindow = kept.Where(m => m.Role == "assistant" && m.ToolCalls != null)
+                                .SelectMany(m => m.ToolCalls!).Select(c => c.Id).ToHashSet();
+        return kept.Where(m => m.Role != "tool" || callsInWindow.Contains(m.ToolCallId ?? "")).ToList();
     }
 
     /// <summary>Mô tả ngắn để người dùng duyệt trước khi chạy công cụ nhạy cảm.</summary>

@@ -58,6 +58,7 @@ public static class SelfCheck
             KeyboardChecks();
             TargetChecks();
             ThemeChecks();
+            HistoryChecks();
             SupportChecks();
         }
         catch (Exception e)
@@ -982,6 +983,59 @@ public static class SelfCheck
         // Một phần tên chỉ khớp một máy thì vẫn tiện: "Galaxy" → #3.
         Check(Ai.AiToolHost.MatchOne(phones, "Galaxy").Hit?.Num == 3, "a unique partial name still resolves");
         Check(Ai.AiToolHost.MatchOne(phones, "Máy A").Hit?.Num == 4, "a Vietnamese name resolves");
+    }
+
+    // ---------------- cửa sổ hội thoại gửi cho nhà cung cấp AI ----------------
+    static void HistoryChecks()
+    {
+        static Ai.AiMessage U(string t) => new() { Role = "user", Content = t };
+        static Ai.AiMessage A(string t) => new() { Role = "assistant", Content = t };
+        static Ai.AiMessage AC(string t, params string[] ids) =>
+            new() { Role = "assistant", Content = t, ToolCalls = ids.Select(id => new Ai.AiToolCall(id, "shell", "{}")).ToList() };
+        static Ai.AiMessage R(string id) => new() { Role = "tool", Content = "ok", ToolCallId = id, ToolName = "shell" };
+        static string Shape(IEnumerable<Ai.AiMessage> ms) => string.Join(",", ms.Select(m => m.Role));
+
+        // 1) cửa sổ cắt ngang cặp gọi/kết quả: phải bắt đầu ở lượt người dùng
+        var cut = new List<Ai.AiMessage> { AC("", "c1"), R("c1"), A("xong"), U("máy nào đang bật?") };
+        var w1 = Ai.AiAgent.Window(cut);
+        Check(w1[0].Role == "user" && w1.Count == 1, "history starts at a user turn", Shape(w1));
+
+        // 2) hội thoại dài: giữ tối đa 60 lượt và vẫn bắt đầu ở lượt người dùng
+        var longChat = new List<Ai.AiMessage>();
+        for (int i = 0; i < 40; i++) { longChat.Add(U($"câu {i}")); longChat.Add(AC("", $"c{i}")); longChat.Add(R($"c{i}")); }
+        var w2 = Ai.AiAgent.Window(longChat);
+        Check(w2.Count <= 60 && w2[0].Role == "user" && w2[^1].Role == "tool", "long history is capped and aligned", $"{w2.Count} {Shape(w2.Take(2))}");
+
+        // 3) lời gọi không có kết quả (người dùng bấm dừng giữa vòng) không được gửi đi
+        var half = new List<Ai.AiMessage> { U("cài giúp tôi"), AC("", "a", "b"), R("a") };
+        var w3 = Ai.AiAgent.Window(half);
+        var calls3 = w3.Where(m => m.ToolCalls != null).SelectMany(m => m.ToolCalls!).Select(c => c.Id).ToList();
+        Check(calls3.SequenceEqual(["a"]), "unanswered tool calls are dropped", string.Join(",", calls3));
+
+        // 4) assistant chỉ có lời gọi mà không có kết quả nào → bỏ hẳn
+        var orphanCall = new List<Ai.AiMessage> { U("chạy lệnh"), AC("", "z"), U("thôi") };
+        var w4 = Ai.AiAgent.Window(orphanCall);
+        Check(w4.All(m => m.ToolCalls == null), "an assistant with no answered call is dropped", Shape(w4));
+
+        // 5) kết quả công cụ mồ côi (assistant đã bị cắt) → bỏ
+        var orphanResult = new List<Ai.AiMessage> { R("ghost"), U("xin chào") };
+        var w5 = Ai.AiAgent.Window(orphanResult);
+        Check(w5.Count == 1 && w5[0].Role == "user", "orphan tool results are dropped", Shape(w5));
+
+        // 6) câu trả lời lỗi và assistant rỗng không gửi lại
+        var noise = new List<Ai.AiMessage> { U("hỏi"), new Ai.AiMessage { Role = "assistant", Content = "lỗi mạng", Error = true }, A(""), U("hỏi lại") };
+        var w6 = Ai.AiAgent.Window(noise);
+        Check(w6.All(m => !m.Error) && w6.All(m => !(m.Role == "assistant" && m.Content == "")), "error and empty assistant turns are dropped", Shape(w6));
+
+        // 7) hội thoại bình thường giữ nguyên thứ tự và mã lời gọi
+        var good = new List<Ai.AiMessage> { U("kiểm tra pin"), AC("đang kiểm tra", "k1"), R("k1"), A("pin 80%") };
+        var w7 = Ai.AiAgent.Window(good);
+        Check(Shape(w7) == "user,assistant,tool,assistant" && w7[2].ToolCallId == "k1", "a valid exchange is kept as is", Shape(w7));
+
+        // 8) lượt mới nhất của người dùng không bao giờ bị cắt
+        var many = new List<Ai.AiMessage>();
+        for (int i = 0; i < 80; i++) many.Add(U($"câu {i}"));
+        Check(Ai.AiAgent.Window(many)[^1].Content == "câu 79", "the newest user turn always survives");
     }
 
     // ---------------- giao diện: bảng màu, thước đo, độ tương phản WCAG ----------------

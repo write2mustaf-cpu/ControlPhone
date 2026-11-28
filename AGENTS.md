@@ -63,7 +63,7 @@ npm run i18n:check                  # key coverage per language
 - New AI features must go through `AiToolHost` (schema + `Sensitive` flag) so the assistant stays auditable.
 - Tool output sent back to the model is truncated (`AiAgent.TruncateForModel`) and declared untrusted in the system
   prompt (rule 11) — keep both when touching the agent loop.
-- `--selfcheck` is the regression suite (326 checks as of 3.21.0): every new pure helper gets a `Check(...)` line, and
+- `--selfcheck` is the regression suite (334 checks as of 3.22.0): every new pure helper gets a `Check(...)` line, and
   CI runs it twice (build output + installed copy from the installer).
 
 ## Data files
@@ -76,6 +76,11 @@ npm run i18n:check                  # key coverage per language
 - `node tools/i18n-native.js --strict` runs in CI and fails when ar or en miss a string. The extractor skips
   `Core/SelfCheck.cs` (test fixtures) and interpolation fragments — do not "translate" those.
 - Self-check asserts the whole ar pack: no value left in Vietnamese, every value has Arabic script, `{n}` placeholders kept.
+
+## AI conversation window
+- `AiAgent.Window(messages, max=60)` is the only thing sent to a provider: it keeps the last N turns, starts at a `user`
+  turn, drops unanswered tool calls and orphan tool results. Trimming blindly breaks OpenAI (400 on `role: tool` without
+  its `tool_calls`) and Anthropic (first message must be `user`) — a chat then fails forever until deleted.
 
 ## Design system
 - Every colour comes from `Theme.Palette` (key → dark/light hex) and is applied as `DynamicResource`, so switching theme is a
