@@ -208,8 +208,10 @@ public sealed class AiToolHost
         foreach (var d in devs)
         {
             sb.Append($"#{d.Num} {d.Name} ({d.Status}, {d.Transport}) — ");
-            sb.Append(d.Fps > 0 ? $"{d.Fps:0} fps · {d.Kbps:N0} kbps · {d.DecodeMs:0.0} ms/frame" : "no video yet");
+            if (d.AgeMs > 3000) sb.Append($"stalled: no frame for {d.AgeMs / 1000:0.0}s");
+            else sb.Append(d.Fps > 0 ? $"{d.Fps:0} fps · {d.Kbps:N0} kbps · {d.DecodeMs:0.0} ms/frame" : "no video yet");
             if (d.Dropped > 0) sb.Append($" · {d.Dropped} dropped");
+            if (d.Skipped > 0) sb.Append($" · {d.Skipped} skipped (waiting for a key frame)");
             if (d.Plan != "") sb.Append($" · plan {d.Plan}");
             sb.AppendLine();
         }

@@ -39,7 +39,8 @@ public partial class MainWindow : IAiHost
             d.Groups.ToList(), d.Paused, d.ControlSession != null || d.HasFrame,
             string.IsNullOrEmpty(d.Error) ? null : d.Error,
             d.Perf.Fps, d.Perf.Kbps, d.Perf.DecodeMs, d.Perf.Dropped,
-            d.OpenedPlan is { } p ? $"{p.MaxSize}p/{p.MaxFps}fps/{p.BitRate / 1000}kbps" : ""))
+            d.OpenedPlan is { } p ? $"{p.MaxSize}p/{p.MaxFps}fps/{p.BitRate / 1000}kbps" : "",
+            d.Perf.Skipped, d.Perf.AgeMs))
         .ToList());
 
     public string SetQuality(string id, int maxSize, int fps, int kbps) => OnUi(() =>

@@ -23,9 +23,10 @@ public partial class MainWindow
         {
             if (!Store.Settings.AutoQuality) return;
             var now = Environment.TickCount64;
+            var cpu = AutoQuality.CpuLoad();
             foreach (var d in manager.Devices.ToList())
             {
-                var decision = AutoQuality.Observe(d, now);
+                var decision = AutoQuality.Observe(d, now, cpu);
                 if (decision is { Changed: true } && d.OpenedPlan is { } opened && d.HqRefs == 0
                     && d.ActiveAddr != null && !d.Pending && d.ThumbDecoder != null)
                 {
