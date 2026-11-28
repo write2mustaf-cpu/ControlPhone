@@ -61,8 +61,8 @@ public sealed class AiToolHost
         return o.ToJsonString();
     }
 
-    static readonly string DeviceArg = "Danh sách máy: số thứ tự (\"3\"), tên, hoặc id. Bỏ trống = các máy đang chọn trong ControlPhone.";
-    static readonly string DeviceArgReq = "Máy đích: số thứ tự (\"3\"), tên hoặc id.";
+    static readonly string DeviceArg = "Phones to act on: number (\"3\"), name, or id. Leave empty = the phones selected in ControlPhone. A name must match exactly one phone; ambiguous or unknown names are refused and nothing runs.";
+    static readonly string DeviceArgReq = "Target phone: number (\"3\"), name or id — must match exactly one phone.";
 
     List<ToolDef>? defs;
     List<ToolDef> Defs => defs ??= BuildDefs();
@@ -200,11 +200,44 @@ public sealed class AiToolHost
         return Resolve(tokens, all);
     }
 
-    sealed record PhoneTarget(string Id, int Num, string Name, string Status);
+    internal sealed record PhoneTarget(string Id, int Num, string Name, string Status);
 
     List<PhoneTarget> AllTargets() => host.Devices()
         .Select(d => new PhoneTarget(d.Id, d.Num, d.Name, d.Status)).ToList();
 
+    /// <summary>
+    /// Ghép đúng MỘT mục trong "devices" với đúng MỘT máy. Trước 3.20 hàm này lấy máy đầu tiên khớp một phần tên, nên
+    /// "Pixel" trên máy có "Pixel 8" và "Pixel 8 Pro" chọn ngầm một máy, và một mục gõ sai thì bị bỏ qua im lặng — công cụ
+    /// nhạy cảm (xoá dữ liệu, gỡ ứng dụng, shell) chạy trên máy người dùng không hề chỉ định. Giờ: mơ hồ = từ chối.
+    /// </summary>
+    internal static (PhoneTarget? Hit, string Problem) MatchOne(IReadOnlyList<PhoneTarget> devices, string raw)
+    {
+        var token = (raw ?? "").Trim();
+        if (token == "") return (null, "empty entry");
+        var bare = token.TrimStart('#');
+        var byId = devices.Where(d => d.Id == token || d.Id == bare).ToList();
+        if (byId.Count == 1) return (byId[0], "");
+        if (int.TryParse(bare, out var num))
+        {
+            var byNum = devices.Where(d => d.Num == num).ToList();
+            if (byNum.Count == 1) return (byNum[0], "");
+            return byNum.Count > 1
+                ? (null, $"number {num} is used by {byNum.Count} phones")
+                : (null, $"no phone has the number {num}");
+        }
+        var exact = devices.Where(d => string.Equals(d.Name, token, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (exact.Count == 1) return (exact[0], "");
+        if (exact.Count > 1) return (null, $"{exact.Count} phones are called \"{token}\"");
+        var part = devices.Where(d => d.Name.Contains(token, StringComparison.OrdinalIgnoreCase)).ToList();
+        return part.Count switch
+        {
+            1 => (part[0], ""),
+            0 => (null, $"nothing matches \"{token}\""),
+            _ => (null, $"\"{token}\" matches {part.Count} phones ({string.Join(", ", part.Select(p => "#" + p.Num))})"),
+        };
+    }
+
+    /// <summary>Danh sách máy đích; ném lỗi (không chạy gì) nếu có mục không xác định được duy nhất.</summary>
     List<PhoneTarget> Resolve(List<string> tokens, bool all)
     {
         var devices = AllTargets();
@@ -215,15 +248,17 @@ public sealed class AiToolHost
             return devices.Where(d => sel.Contains(d.Id)).ToList();
         }
         var res = new List<PhoneTarget>();
+        var problems = new List<string>();
         foreach (var raw in tokens)
         {
-            var t = raw.Trim().TrimStart('#');
-            var hit = devices.FirstOrDefault(d => d.Id == raw)
-                      ?? devices.FirstOrDefault(d => int.TryParse(t, out var n) && d.Num == n)
-                      ?? devices.FirstOrDefault(d => string.Equals(d.Name, t, StringComparison.OrdinalIgnoreCase))
-                      ?? devices.FirstOrDefault(d => d.Name.Contains(t, StringComparison.OrdinalIgnoreCase));
-            if (hit != null && !res.Contains(hit)) res.Add(hit);
+            var (hit, why) = MatchOne(devices, raw);
+            if (hit == null) { problems.Add($"{raw.Trim()}: {why}"); continue; }
+            if (!res.Contains(hit)) res.Add(hit);
         }
+        if (problems.Count > 0)
+            throw new InvalidOperationException("Nothing was run — these entries do not name one phone: "
+                + string.Join("; ", problems) + ". Known phones: "
+                + string.Join(", ", devices.OrderBy(d => d.Num).Select(d => $"#{d.Num} {d.Name}")));
         return res;
     }
 
