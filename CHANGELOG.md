@@ -3,6 +3,41 @@
 All notable changes to ControlPhone. This file lists only work that is actually implemented and testable in this
 repository — no planned features are listed as done.
 
+## 3.26.0 — the budget also cuts the bits, and the app stops dying on a save
+
+3.25.0 divided the decode budget across open phones but left one thing out: the bitrate. A tile cut from 480p/15 to 384p/5
+still asked for 600 kbps, so 300 phones pulled ~180 Mbps of video for pictures a fifth of the size — wasted USB, wasted
+encoder time, and a grid that drops frames for no reason.
+
+### 1. Bits follow pixels
+
+```
+rate = wanted × (pixels now ⁄ pixels asked for)     floor 120 kbps, never above what was asked
+```
+
+| Stream | Before 3.26 | Now |
+|---|---|---|
+| 300 phones, 480p/15 → 480p/12 | 600 kbps | **480 kbps** |
+| starved, 480p/15 → 384p/5 | 600 kbps | **128 kbps** |
+| almost nothing, → 240p/5 | 600 kbps | **120 kbps** (floor) |
+| 300 phones, 720p/30 → 480p/11 | 2 Mbps | **326 kbps** |
+
+### 2. The grid no longer gets quietly blurrier
+
+When the budget really applies, a single toast says what happened: *"decode budget shared across 300 screens: 480p ·
+12 fps · 480 kbps each"*. Shown once per state, not every two seconds.
+
+### 3. A save can no longer kill the process
+
+`Store.Flush`/`FlushUi` run on a `System.Threading.Timer` thread with no protection: any exception from
+`JsonSerializer.Serialize` there is an unhandled thread exception, which terminates the app instead of failing one save.
+Both are now wrapped, and the reason is kept in `Store.SaveError` for diagnosis.
+
+### Verification
+- Self-check 379 → **382** (bitrate scaling, its floor, and the 720p→480p case); the arithmetic ran in the Linux harness
+  first (45 assertions, 0 failed).
+- ar/en packs: 1 new string (919 keys each, 0 missing).
+
 ## 3.25.0 — the grid has a budget, not just per-phone luck
 
 Every phone adapted on its own, so nothing limited what the *whole grid* costs. 300 phones at 480p/15 fps is 300 × 1.94 M

@@ -27,6 +27,7 @@ public partial class MainWindow
             var all = manager.Devices.ToList();
             var streams = all.Count(x => x.ThumbDecoder != null);
             LoadBudget.SetActive(streams, Environment.ProcessorCount);
+            NotifyBudget(streams);
             foreach (var d in all)
             {
                 var decision = AutoQuality.Observe(d, now, cpu, streams);
@@ -44,6 +45,22 @@ public partial class MainWindow
             }
         };
         timer.Start();
+    }
+
+    string budgetNote = "";
+
+    /// <summary>Khi ngân sách chia lại làm lưới nhẹ đi, nói một lần cho người dùng biết (không im lặng hạ chất lượng).</summary>
+    void NotifyBudget(int streams)
+    {
+        if (!Store.Settings.LoadBudget || LoadBudget.ActiveShare <= 0 || streams < 4) { budgetNote = ""; return; }
+        var s = Store.Settings;
+        var plan = LoadBudget.Fit(DeviceVideo.ThumbBase(null, s), LoadBudget.ActiveShare);
+        var note = $"{streams}|{plan.MaxSize}|{plan.MaxFps}|{plan.BitRate}";
+        if (note == budgetNote) return;
+        var first = budgetNote == "";
+        budgetNote = note;
+        if (!first) return;                     // chỉ nhắc khi tình trạng đổi hẳn, không nhắc lại mỗi 2 giây
+        Ui.Toast(T("Chia ngân sách giải mã cho {0} màn hình: mỗi màn hình {1}p · {2} fps · {3} kbps", streams, plan.MaxSize, plan.MaxFps, plan.BitRate / 1000), "", 6000);
     }
 
     void DlgDeviceVideo(PhoneDevice d)
